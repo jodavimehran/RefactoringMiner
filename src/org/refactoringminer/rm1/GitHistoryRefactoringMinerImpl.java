@@ -114,14 +114,18 @@ public class GitHistoryRefactoringMinerImpl implements GitHistoryRefactoringMine
 		logger.info(String.format("Analyzed %s [Commits: %d, Errors: %d, Refactorings: %d]", projectName, commitsCount, errorCommitsCount, refactoringsCount));
 	}
 
-	protected List<Refactoring> detectRefactorings(GitService gitService, Repository repository, final RefactoringHandler handler, File projectFolder, RevCommit currentCommit) throws Exception {
+	protected List<Refactoring> detectRefactorings(GitService gitService, Repository repository, final RefactoringHandler handler, File projectFolder, RevCommit currentCommit) throws Exception{
+		return detectRefactorings(gitService, repository, handler, projectFolder, currentCommit.getParent(0), currentCommit);
+	}
+
+	protected List<Refactoring> detectRefactorings(GitService gitService, Repository repository, final RefactoringHandler handler, File projectFolder, RevCommit leftSideCommit, RevCommit rightSideCommit) throws Exception {
 		List<Refactoring> refactoringsAtRevision;
-		String commitId = currentCommit.getId().getName();
+		String commitId = rightSideCommit.getId().getName();
 		List<String> filePathsBefore = new ArrayList<String>();
 		List<String> filePathsCurrent = new ArrayList<String>();
 		Map<String, String> renamedFilesHint = new HashMap<String, String>();
-		gitService.fileTreeDiff(repository, currentCommit, filePathsBefore, filePathsCurrent, renamedFilesHint);
-		
+		gitService.fileTreeDiff(repository, leftSideCommit, rightSideCommit, filePathsBefore, filePathsCurrent, renamedFilesHint);
+
 		Set<String> repositoryDirectoriesBefore = new LinkedHashSet<String>();
 		Set<String> repositoryDirectoriesCurrent = new LinkedHashSet<String>();
 		Map<String, String> fileContentsBefore = new LinkedHashMap<String, String>();
@@ -129,15 +133,14 @@ public class GitHistoryRefactoringMinerImpl implements GitHistoryRefactoringMine
 		try (RevWalk walk = new RevWalk(repository)) {
 			// If no java files changed, there is no refactoring. Also, if there are
 			// only ADD's or only REMOVE's there is no refactoring
-			if (!filePathsBefore.isEmpty() && !filePathsCurrent.isEmpty() && currentCommit.getParentCount() > 0) {
-				RevCommit parentCommit = currentCommit.getParent(0);
-				populateFileContents(repository, parentCommit, filePathsBefore, fileContentsBefore, repositoryDirectoriesBefore);
-				UMLModel parentUMLModel = createModel(fileContentsBefore, repositoryDirectoriesBefore);
+			if (!filePathsBefore.isEmpty() && !filePathsCurrent.isEmpty() && rightSideCommit.getParentCount() > 0) {
+				populateFileContents(repository, leftSideCommit, filePathsBefore, fileContentsBefore, repositoryDirectoriesBefore);
+				UMLModel leftSideUMLModel = createModel(fileContentsBefore, repositoryDirectoriesBefore);
 
-				populateFileContents(repository, currentCommit, filePathsCurrent, fileContentsCurrent, repositoryDirectoriesCurrent);
-				UMLModel currentUMLModel = createModel(fileContentsCurrent, repositoryDirectoriesCurrent);
+				populateFileContents(repository, rightSideCommit, filePathsCurrent, fileContentsCurrent, repositoryDirectoriesCurrent);
+				UMLModel rightSideUMLModel = createModel(fileContentsCurrent, repositoryDirectoriesCurrent);
 				
-				refactoringsAtRevision = parentUMLModel.diff(currentUMLModel, renamedFilesHint).getRefactorings();
+				refactoringsAtRevision = leftSideUMLModel.diff(rightSideUMLModel, renamedFilesHint).getRefactorings();
 				refactoringsAtRevision = filter(refactoringsAtRevision);
 			} else {
 				//logger.info(String.format("Ignored revision %s with no changes in java files", commitId));
@@ -728,5 +731,28 @@ public class GitHistoryRefactoringMinerImpl implements GitHistoryRefactoringMine
 		}
 		String downloadLink = cloneURL.substring(0, indexOfDotGit) + downloadResource + commitId + ".zip";
 		return downloadLink;
+	}
+
+	public void detectAtCommit(Repository repository, String beforeCommitId, String currentCommitId, RefactoringHandler handler) {
+		String cloneURL = repository.getConfig().getString("remote", "origin", "url");
+		File metadataFolder = repository.getDirectory();
+		File projectFolder = metadataFolder.getParentFile();
+		GitService gitService = new GitServiceImpl();
+		RevWalk walk = new RevWalk(repository);
+		try {
+			RevCommit beforeCommit = walk.parseCommit(repository.resolve(beforeCommitId));
+			RevCommit currentCommit = walk.parseCommit(repository.resolve(currentCommitId));
+			this.detectRefactorings(gitService, repository, handler, projectFolder, beforeCommit, currentCommit);
+		} catch (MissingObjectException moe) {
+			this.detectRefactorings(handler, projectFolder, cloneURL, currentCommitId);
+		} catch (RefactoringMinerTimedOutException e) {
+			logger.warn(String.format("Ignored revision %s due to timeout", currentCommitId), e);
+		} catch (Exception e) {
+			logger.warn(String.format("Ignored revision %s due to error", currentCommitId), e);
+			handler.handleException(currentCommitId, e);
+		} finally {
+			walk.close();
+			walk.dispose();
+		}
 	}
 }

@@ -44,4 +44,7 @@ public interface GitService {
 	void fileTreeDiff(Repository repository, RevCommit currentCommit, List<String> filesBefore, List<String> filesCurrent, Map<String, String> renamedFilesHint) throws Exception;
 
 	Churn churn(Repository repository, RevCommit currentCommit) throws Exception;
+
+	void fileTreeDiff(Repository repository, RevCommit leftSideCommit, RevCommit rightSideCommit, List<String> javaFilesBefore, List<String> javaFilesCurrent, Map<String, String> renamedFilesHint) throws Exception;
+
 }
