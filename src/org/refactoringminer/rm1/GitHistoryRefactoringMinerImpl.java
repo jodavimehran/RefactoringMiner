@@ -732,4 +732,27 @@ public class GitHistoryRefactoringMinerImpl implements GitHistoryRefactoringMine
 		String downloadLink = cloneURL.substring(0, indexOfDotGit) + downloadResource + commitId + ".zip";
 		return downloadLink;
 	}
+
+	public void detectAtCommit(Repository repository, String beforeCommitId, String currentCommitId, RefactoringHandler handler) {
+		String cloneURL = repository.getConfig().getString("remote", "origin", "url");
+		File metadataFolder = repository.getDirectory();
+		File projectFolder = metadataFolder.getParentFile();
+		GitService gitService = new GitServiceImpl();
+		RevWalk walk = new RevWalk(repository);
+		try {
+			RevCommit beforeCommit = walk.parseCommit(repository.resolve(beforeCommitId));
+			RevCommit currentCommit = walk.parseCommit(repository.resolve(currentCommitId));
+			this.detectRefactorings(gitService, repository, handler, projectFolder, beforeCommit, currentCommit);
+		} catch (MissingObjectException moe) {
+			this.detectRefactorings(handler, projectFolder, cloneURL, currentCommitId);
+		} catch (RefactoringMinerTimedOutException e) {
+			logger.warn(String.format("Ignored revision %s due to timeout", currentCommitId), e);
+		} catch (Exception e) {
+			logger.warn(String.format("Ignored revision %s due to error", currentCommitId), e);
+			handler.handleException(currentCommitId, e);
+		} finally {
+			walk.close();
+			walk.dispose();
+		}
+	}
 }
