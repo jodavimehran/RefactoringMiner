@@ -1,9 +1,6 @@
 package gr.uom.java.xmi.diff;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.refactoringminer.api.Refactoring;
@@ -27,7 +24,16 @@ public class InlineOperationRefactoring implements Refactoring {
 	private Set<AbstractCodeFragment> inlinedCodeFragmentsFromInlinedOperation;
 	private Set<AbstractCodeFragment> inlinedCodeFragmentsInTargetOperation;
 	private UMLOperationBodyMapper bodyMapper;
-	
+
+	public InlineOperationRefactoring(UMLOperation inlinedOperation, UMLOperation targetOperationBeforeInline, UMLOperation targetOperationAfterInline) {
+		this.inlinedOperation = inlinedOperation;
+		this.targetOperationAfterInline = targetOperationAfterInline;
+		this.targetOperationBeforeInline = targetOperationBeforeInline;
+		this.inlinedOperationInvocations = new ArrayList<>();
+		this.inlinedCodeFragmentsFromInlinedOperation = new HashSet<>();
+		this.inlinedCodeFragmentsInTargetOperation = new HashSet<>();
+	}
+
 	public InlineOperationRefactoring(UMLOperationBodyMapper bodyMapper, UMLOperation targetOperationBeforeInline,
 			List<OperationInvocation> operationInvocations) {
 		this.bodyMapper = bodyMapper;
