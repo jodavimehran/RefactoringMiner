@@ -246,9 +246,7 @@ public class GitHistoryRefactoringMinerImpl implements GitHistoryRefactoringMine
 	private String populateWithGitHubAPI(String cloneURL, String currentCommitId,
 			List<String> filesBefore, List<String> filesCurrent, Map<String, String> renamedFilesHint) throws IOException {
 		logger.info("Processing {} {} ...", cloneURL, currentCommitId);
-		GitHub gitHub = connectToGitHub();
-		String repoName = extractRepositoryName(cloneURL);
-		GHRepository repository = gitHub.getRepository(repoName);
+		GHRepository repository = getGhRepository(cloneURL);
 		GHCommit commit = repository.getCommit(currentCommitId);
 		String parentCommitId = commit.getParents().get(0).getSHA1();
 		List<GHCommit.File> commitFiles = commit.getFiles();
@@ -508,9 +506,7 @@ public class GitHistoryRefactoringMinerImpl implements GitHistoryRefactoringMine
 			Map<String, String> filesBefore, Map<String, String> filesCurrent, Map<String, String> renamedFilesHint,
 			Set<String> repositoryDirectoriesBefore, Set<String> repositoryDirectoriesCurrent) throws IOException, InterruptedException {
 		logger.info("Processing {} {} ...", cloneURL, currentCommitId);
-		GitHub gitHub = connectToGitHub();
-		String repoName = extractRepositoryName(cloneURL);
-		GHRepository repository = gitHub.getRepository(repoName);
+		GHRepository repository = getGhRepository(cloneURL);
 		GHCommit currentCommit = repository.getCommit(currentCommitId);
 		final String parentCommitId = currentCommit.getParents().get(0).getSHA1();
 		Set<String> deletedAndRenamedFileParentDirectories = ConcurrentHashMap.newKeySet();
@@ -660,14 +656,18 @@ public class GitHistoryRefactoringMinerImpl implements GitHistoryRefactoringMine
 
 	@Override
 	public void detectAtPullRequest(String cloneURL, int pullRequestId, RefactoringHandler handler, int timeout) throws IOException {
-		GitHub gitHub = connectToGitHub();
-		String repoName = extractRepositoryName(cloneURL);
-		GHRepository repository = gitHub.getRepository(repoName);
+		GHRepository repository = getGhRepository(cloneURL);
 		GHPullRequest pullRequest = repository.getPullRequest(pullRequestId);
 		PagedIterable<GHPullRequestCommitDetail> commits = pullRequest.listCommits();
 		for(GHPullRequestCommitDetail commit : commits) {
 			detectAtCommit(cloneURL, commit.getSha(), handler, timeout);
 		}
+	}
+
+	public GHRepository getGhRepository(String cloneURL) throws IOException {
+		GitHub gitHub = connectToGitHub();
+		String repoName = extractRepositoryName(cloneURL);
+		return gitHub.getRepository(repoName);
 	}
 
 	private static final String GITHUB_URL = "https://github.com/";
