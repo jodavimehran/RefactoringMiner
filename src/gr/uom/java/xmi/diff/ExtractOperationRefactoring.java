@@ -50,12 +50,14 @@ public class ExtractOperationRefactoring implements Refactoring {
 		this.sourceOperationBeforeExtraction = sourceOperationBeforeExtraction;
 		this.sourceOperationAfterExtraction = sourceOperationAfterExtraction;
 		this.extractedOperationInvocations = operationInvocations;
-		this.replacements = bodyMapper.getReplacements();
 		this.extractedCodeFragmentsFromSourceOperation = new LinkedHashSet<AbstractCodeFragment>();
 		this.extractedCodeFragmentsToExtractedOperation = new LinkedHashSet<AbstractCodeFragment>();
-		for(AbstractCodeMapping mapping : bodyMapper.getMappings()) {
-			this.extractedCodeFragmentsFromSourceOperation.add(mapping.getFragment1());
-			this.extractedCodeFragmentsToExtractedOperation.add(mapping.getFragment2());
+		if(bodyMapper != null) {
+			this.replacements = bodyMapper.getReplacements();
+			for (AbstractCodeMapping mapping : bodyMapper.getMappings()) {
+				this.extractedCodeFragmentsFromSourceOperation.add(mapping.getFragment1());
+				this.extractedCodeFragmentsToExtractedOperation.add(mapping.getFragment2());
+			}
 		}
 	}
 
