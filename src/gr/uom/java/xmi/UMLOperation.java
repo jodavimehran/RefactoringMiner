@@ -28,6 +28,7 @@ public class UMLOperation implements Comparable<UMLOperation>, Serializable, Loc
 	private boolean isAbstract;
 	private List<UMLParameter> parameters;
 	private String className;
+	private UMLClass umlClass;
 	private boolean isConstructor;
 	private boolean isFinal;
 	private boolean isStatic;
@@ -210,6 +211,13 @@ public class UMLOperation implements Comparable<UMLOperation>, Serializable, Loc
 		this.className = className;
 	}
 
+	public UMLClass getUmlClass() {
+		return umlClass;
+	}
+
+	public void setUmlClass(UMLClass umlClass) {
+		this.umlClass = umlClass;
+	}
 	public void addParameter(UMLParameter parameter) {
 		this.parameters.add(parameter);
 	}
