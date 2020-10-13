@@ -2,10 +2,7 @@ package gr.uom.java.xmi.diff;
 
 import gr.uom.java.xmi.UMLClass;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.refactoringminer.api.Refactoring;
@@ -92,5 +89,19 @@ public class MoveClassRefactoring implements Refactoring {
 				.setDescription("moved type declaration")
 				.setCodeElement(movedClass.getName()));
 		return ranges;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		MoveClassRefactoring that = (MoveClassRefactoring) o;
+		return originalClass.equals(that.originalClass) &&
+				movedClass.equals(that.movedClass);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(originalClass, movedClass);
 	}
 }
