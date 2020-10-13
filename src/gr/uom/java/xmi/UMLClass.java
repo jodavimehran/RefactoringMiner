@@ -26,6 +26,7 @@ public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, 
     private List<UMLTypeParameter> typeParameters;
     private UMLJavadoc javadoc;
     private List<UMLAnnotation> annotations;
+    private List<UMLEnumConstant> enumConstants;
     
     public UMLClass(String packageName, String name, LocationInfo locationInfo, boolean topLevel, List<String> importedTypes) {
     	super();
@@ -75,6 +76,7 @@ public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, 
         this.importedTypes = importedTypes;
         this.typeParameters = new ArrayList<UMLTypeParameter>();
         this.annotations = new ArrayList<UMLAnnotation>();
+        this.enumConstants = new ArrayList<UMLEnumConstant>();
     }
 
     public List<UMLTypeParameter> getTypeParameters() {
@@ -105,7 +107,15 @@ public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, 
     	anonymousClassList.add(anonymousClass);
     }
 
-    public String getPackageName() {
+    public void addEnumConstant(UMLEnumConstant enumConstant) {
+    	enumConstants.add(enumConstant);
+    }
+
+    public List<UMLEnumConstant> getEnumConstants() {
+		return enumConstants;
+	}
+
+	public String getPackageName() {
 		return this.packageName;
 	}
 
@@ -191,6 +201,17 @@ public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, 
 	public void setJavadoc(UMLJavadoc javadoc) {
 		this.javadoc = javadoc;
 	}
+
+    public UMLEnumConstant containsEnumConstant(UMLEnumConstant otherEnumConstant) {
+    	ListIterator<UMLEnumConstant> enumConstantIt = enumConstants.listIterator();
+    	while(enumConstantIt.hasNext()) {
+    		UMLEnumConstant enumConstant = enumConstantIt.next();
+    		if(enumConstant.equals(otherEnumConstant)) {
+    			return enumConstant;
+    		}
+    	}
+    	return null;
+    }
 
     public UMLAttribute containsAttribute(UMLAttribute otherAttribute) {
     	ListIterator<UMLAttribute> attributeIt = attributes.listIterator();
