@@ -34,6 +34,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import gr.uom.java.xmi.diff.UMLModelDiff;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jgit.errors.MissingObjectException;
@@ -139,15 +140,17 @@ public class GitHistoryRefactoringMinerImpl implements GitHistoryRefactoringMine
 
 				populateFileContents(repository, rightSideCommit, filePathsCurrent, fileContentsCurrent, repositoryDirectoriesCurrent);
 				UMLModel rightSideUMLModel = createModel(fileContentsCurrent, repositoryDirectoriesCurrent);
-				
-				refactoringsAtRevision = leftSideUMLModel.diff(rightSideUMLModel, renamedFilesHint).getRefactorings();
+
+				UMLModelDiff umlModelDiff = leftSideUMLModel.diff(rightSideUMLModel, renamedFilesHint);
+				refactoringsAtRevision = umlModelDiff.getRefactorings();
 				refactoringsAtRevision = filter(refactoringsAtRevision);
+
+				handler.handleExtraInfo(commitId, umlModelDiff);
 			} else {
 				//logger.info(String.format("Ignored revision %s with no changes in java files", commitId));
 				refactoringsAtRevision = Collections.emptyList();
 			}
 			handler.handle(commitId, refactoringsAtRevision);
-			
 			walk.dispose();
 		}
 		return refactoringsAtRevision;
