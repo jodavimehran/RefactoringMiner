@@ -3,12 +3,7 @@ package gr.uom.java.xmi;
 import gr.uom.java.xmi.diff.StringDistance;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, Serializable, LocationInfoProvider {
 	private String qualifiedName;
@@ -37,7 +32,7 @@ public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, 
         	this.qualifiedName = name;
     	else
     		this.qualifiedName = packageName + "." + name;
-        
+
         this.sourceFile = getSourceFile();
         this.sourceFolder = "";
         if(packageName.equals("")) {
@@ -312,7 +307,7 @@ public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, 
     	if(this == o) {
     		return true;
     	}
-    	
+
     	if(o instanceof UMLClass) {
     		UMLClass umlClass = (UMLClass)o;
     		return this.packageName.equals(umlClass.packageName) && this.name.equals(umlClass.name) && this.sourceFile.equals(umlClass.sourceFile);
@@ -320,7 +315,12 @@ public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, 
     	return false;
     }
 
-    public String toString() {
+	@Override
+	public int hashCode() {
+		return Objects.hash(packageName, name, sourceFile);
+	}
+
+	public String toString() {
     	return getName();
     }
 
@@ -343,7 +343,7 @@ public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, 
 		double normalized = (double)distance/(double)Math.max(s1.length(), s2.length());
 		return normalized;
 	}
-	
+
 	public double normalizedSourceFolderDistance(UMLClass c) {
 		String s1 = sourceFolder.toLowerCase();
 		String s2 = c.sourceFolder.toLowerCase();

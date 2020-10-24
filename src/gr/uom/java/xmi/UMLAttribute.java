@@ -6,6 +6,7 @@ import gr.uom.java.xmi.diff.StringDistance;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 
 public class UMLAttribute implements Comparable<UMLAttribute>, Serializable, LocationInfoProvider, VariableDeclarationProvider {
 	private LocationInfo locationInfo;
@@ -140,6 +141,11 @@ public class UMLAttribute implements Comparable<UMLAttribute>, Serializable, Loc
 			this.type.equals(umlAttribute.type);
     	}
     	return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(name, type, visibility);
 	}
 
 	public boolean equalsQualified(UMLAttribute umlAttribute) {
