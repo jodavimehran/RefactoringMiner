@@ -9,7 +9,8 @@ import java.util.stream.Collectors;
 
 public class OperationBody {
 
-    private final CompositeStatementObject compositeStatement;
+	private CompositeStatementObject compositeStatement;
+	private List<String> stringRepresentation;
 
     public OperationBody(CompilationUnit cu, String filePath, Block methodBody) {
         this.compositeStatement = new CompositeStatementObject(cu, filePath, methodBody, 0, CodeElementType.BLOCK);
@@ -243,7 +244,10 @@ public class OperationBody {
         return compositeStatement.loopWithVariables(currentElementName, collectionName);
     }
 
-    public List<String> stringRepresentation() {
-        return compositeStatement.stringRepresentation();
-    }
+	public List<String> stringRepresentation() {
+		if(stringRepresentation == null) {
+			stringRepresentation = compositeStatement.stringRepresentation();
+		}
+		return stringRepresentation;
+	}
 }
