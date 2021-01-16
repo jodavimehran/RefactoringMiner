@@ -142,14 +142,14 @@ public class GitHistoryRefactoringMinerImpl implements GitHistoryRefactoringMine
 				populateFileContents(repository, leftSideCommit, filePathsBefore, fileContentsBefore, repositoryDirectoriesBefore);
 				UMLModel leftSideUMLModel = createModel(fileContentsBefore, repositoryDirectoriesBefore);
 
-				populateFileContents(repository, currentCommit, filePathsCurrent, fileContentsCurrent, repositoryDirectoriesCurrent);
-				UMLModel currentUMLModel = createModel(fileContentsCurrent, repositoryDirectoriesCurrent);
-				
-				UMLModelDiff modelDiff = parentUMLModel.diff(currentUMLModel, renamedFilesHint);
+				populateFileContents(repository, rightSideCommit, filePathsCurrent, fileContentsCurrent, repositoryDirectoriesCurrent);
+				UMLModel rightSideUMLModel = createModel(fileContentsCurrent, repositoryDirectoriesCurrent);
+
+				UMLModelDiff modelDiff = leftSideUMLModel.diff(rightSideUMLModel, renamedFilesHint);
 				refactoringsAtRevision = modelDiff.getRefactorings();
 				refactoringsAtRevision = filter(refactoringsAtRevision);
 
-				handler.handleExtraInfo(commitId, umlModelDiff);
+				handler.handleExtraInfo(commitId, modelDiff);
 			} else {
 				//logger.info(String.format("Ignored revision %s with no changes in java files", commitId));
 				refactoringsAtRevision = Collections.emptyList();

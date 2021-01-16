@@ -1,12 +1,12 @@
 package org.refactoringminer.api;
 
-import org.refactoringminer.util.AstUtils;
-import org.refactoringminer.utils.RefactoringRelationship;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.refactoringminer.util.AstUtils;
+import org.refactoringminer.utils.RefactoringRelationship;
 
 public enum RefactoringType {
 
@@ -71,9 +71,11 @@ public enum RefactoringType {
     REORDER_PARAMETER("Reorder Parameter", "Reorder Parameter \\[(.+)\\] to \\[(.+)\\] in method (.+) from class (.+)"),
     ADD_VARIABLE_ANNOTATION("Add Variable Annotation", "Add Variable Annotation (.+) in variable (.+) in method (.+) from class (.+)"),
     REMOVE_VARIABLE_ANNOTATION("Remove Variable Annotation", "Remove Variable Annotation (.+) in variable (.+) in method (.+) from class (.+)"),
-    MODIFY_VARIABLE_ANNOTATION("Modify Variable Annotation", "Modify Variable Annotation (.+) to (.+) in variable (.+) in method (.+) from class (.+)"),
-    CHANGE_VARIABLE_SCOPE("Change Variable Scope", "Change Variable Scope\t (.+) from (.+) to (.+) in method (.+) from class (.+)");
+    MODIFY_VARIABLE_ANNOTATION("Modify Variable Annotation", "Modify Variable Annotation (.+) to (.+) in variable (.+) in method (.+) from class (.+)"),;
 
+    private String displayName;
+    private Pattern regex;
+    private int[] aggregateGroups;
     public static RefactoringType[] ALL = {
             RENAME_CLASS,
             MOVE_CLASS,
@@ -133,19 +135,55 @@ public enum RefactoringType {
             MODIFY_PARAMETER_ANNOTATION,
             ADD_VARIABLE_ANNOTATION,
             REMOVE_VARIABLE_ANNOTATION,
-            MODIFY_VARIABLE_ANNOTATION,
-            CHANGE_VARIABLE_SCOPE,
+            MODIFY_VARIABLE_ANNOTATION
     };
-    private final String displayName;
-    private final String descriptionFormat;
-    private final Pattern regex;
-    private final int[] aggregateGroups;
 
-    RefactoringType(String displayName, String regex, int... aggregateGroups) {
+    private RefactoringType(String displayName, String regex, int ... aggregateGroups) {
         this.displayName = displayName;
         this.regex = Pattern.compile(regex);
         this.aggregateGroups = aggregateGroups;
-        this.descriptionFormat = regex.replace("(.+)", "%s");
+    }
+
+    public Pattern getRegex() {
+        return regex;
+    }
+
+    public String getDisplayName() {
+        return this.displayName;
+    }
+
+    public String getAbbreviation() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < this.displayName.length(); i++) {
+            char c = this.displayName.charAt(i);
+            if (Character.isLetter(c) && Character.isUpperCase(c)) {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    public String aggregate(String refactoringDescription) {
+        Matcher m = regex.matcher(refactoringDescription);
+        if (m.matches()) {
+            StringBuilder sb = new StringBuilder();
+            int current = 0;
+            int replace = 0;
+            for (int g = 1; g <= m.groupCount(); g++) {
+                sb.append(refactoringDescription, current, m.start(g));
+                if (aggregateGroups.length > replace && g == aggregateGroups[replace]) {
+                    sb.append('*');
+                    replace++;
+                } else {
+                    sb.append(refactoringDescription, m.start(g), m.end(g));
+                }
+                current = m.end(g);
+            }
+            sb.append(refactoringDescription, current, refactoringDescription.length());
+            return sb.toString();
+        } else {
+            throw new RuntimeException("Pattern not matched: " + refactoringDescription);
+        }
     }
 
     public static void parse(String refactoringDescription, Collection<RefactoringRelationship> result) {
@@ -215,71 +253,6 @@ public enum RefactoringType {
         return typeKey + "#" + AstUtils.normalizeAttribute(attribute);
     }
 
-    public static RefactoringType extractFromDescription(String refactoringDescription) {
-        for (RefactoringType refType : RefactoringType.values()) {
-            if (refactoringDescription.startsWith(refType.getDisplayName())) {
-                return refType;
-            }
-        }
-        throw new RuntimeException("Unknown refactoring type: " + refactoringDescription);
-    }
-
-    public static RefactoringType fromName(String name) {
-        String lcName = name.toLowerCase();
-        for (RefactoringType rt : RefactoringType.values()) {
-            if (lcName.equals(rt.getDisplayName().toLowerCase())) {
-                return rt;
-            }
-        }
-        throw new IllegalArgumentException("refactoring type not known " + name);
-    }
-
-    public Pattern getRegex() {
-        return regex;
-    }
-
-    public String getDisplayName() {
-        return this.displayName;
-    }
-
-    public String getDescription(Object... args) {
-        return String.format(descriptionFormat, args);
-    }
-
-    public String getAbbreviation() {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < this.displayName.length(); i++) {
-            char c = this.displayName.charAt(i);
-            if (Character.isLetter(c) && Character.isUpperCase(c)) {
-                sb.append(c);
-            }
-        }
-        return sb.toString();
-    }
-
-    public String aggregate(String refactoringDescription) {
-        Matcher m = regex.matcher(refactoringDescription);
-        if (m.matches()) {
-            StringBuilder sb = new StringBuilder();
-            int current = 0;
-            int replace = 0;
-            for (int g = 1; g <= m.groupCount(); g++) {
-                sb.append(refactoringDescription, current, m.start(g));
-                if (aggregateGroups.length > replace && g == aggregateGroups[replace]) {
-                    sb.append('*');
-                    replace++;
-                } else {
-                    sb.append(refactoringDescription, m.start(g), m.end(g));
-                }
-                current = m.end(g);
-            }
-            sb.append(refactoringDescription, current, refactoringDescription.length());
-            return sb.toString();
-        } else {
-            throw new RuntimeException("Pattern not matched: " + refactoringDescription);
-        }
-    }
-
     public List<RefactoringRelationship> parseRefactoring(String refactoringDescription) {
         List<RefactoringRelationship> result;
         Matcher m = regex.matcher(refactoringDescription);
@@ -294,6 +267,15 @@ public enum RefactoringType {
         }
     }
 
+    public static RefactoringType extractFromDescription(String refactoringDescription) {
+        for (RefactoringType refType : RefactoringType.values()) {
+            if (refactoringDescription.startsWith(refType.getDisplayName())) {
+                return refType;
+            }
+        }
+        throw new RuntimeException("Unknown refactoring type: " + refactoringDescription);
+    }
+
     public String getGroup(String refactoringDescription, int group) {
         Matcher m = regex.matcher(refactoringDescription);
         if (m.matches()) {
@@ -301,5 +283,15 @@ public enum RefactoringType {
         } else {
             throw new RuntimeException("Pattern not matched: " + refactoringDescription);
         }
+    }
+
+    public static RefactoringType fromName(String name) {
+        String lcName = name.toLowerCase();
+        for (RefactoringType rt : RefactoringType.values()) {
+            if (lcName.equals(rt.getDisplayName().toLowerCase())) {
+                return rt;
+            }
+        }
+        throw new IllegalArgumentException("refactoring type not known " + name);
     }
 }
