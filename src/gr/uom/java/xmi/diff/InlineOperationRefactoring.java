@@ -1,19 +1,13 @@
 package gr.uom.java.xmi.diff;
 
-import java.util.*;
-
+import gr.uom.java.xmi.UMLOperation;
+import gr.uom.java.xmi.decomposition.*;
+import gr.uom.java.xmi.decomposition.replacement.Replacement;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.refactoringminer.api.Refactoring;
 import org.refactoringminer.api.RefactoringType;
 
-import gr.uom.java.xmi.UMLOperation;
-import gr.uom.java.xmi.decomposition.AbstractCodeFragment;
-import gr.uom.java.xmi.decomposition.AbstractCodeMapping;
-import gr.uom.java.xmi.decomposition.CompositeStatementObject;
-import gr.uom.java.xmi.decomposition.OperationInvocation;
-import gr.uom.java.xmi.decomposition.StatementObject;
-import gr.uom.java.xmi.decomposition.UMLOperationBodyMapper;
-import gr.uom.java.xmi.decomposition.replacement.Replacement;
+import java.util.*;
 
 public class InlineOperationRefactoring implements Refactoring {
 	private UMLOperation inlinedOperation;
@@ -185,18 +179,20 @@ public class InlineOperationRefactoring implements Refactoring {
 		ranges.add(getTargetOperationCodeRangeBeforeInline()
 				.setDescription("target method declaration before inline")
 				.setCodeElement(targetOperationBeforeInline.toString()));
-		for(OperationInvocation invocation : inlinedOperationInvocations) {
+		for (OperationInvocation invocation : inlinedOperationInvocations) {
 			ranges.add(invocation.codeRange()
 					.setDescription("inlined method invocation")
 					.setCodeElement(invocation.actualString()));
 		}
-		for(StatementObject statement : bodyMapper.getNonMappedLeavesT1()) {
-			ranges.add(statement.codeRange().
-					setDescription("deleted statement in inlined method declaration"));
-		}
-		for(CompositeStatementObject statement : bodyMapper.getNonMappedInnerNodesT1()) {
-			ranges.add(statement.codeRange().
-					setDescription("deleted statement in inlined method declaration"));
+		if (bodyMapper != null) {
+			for (StatementObject statement : bodyMapper.getNonMappedLeavesT1()) {
+				ranges.add(statement.codeRange().
+						setDescription("deleted statement in inlined method declaration"));
+			}
+			for (CompositeStatementObject statement : bodyMapper.getNonMappedInnerNodesT1()) {
+				ranges.add(statement.codeRange().
+						setDescription("deleted statement in inlined method declaration"));
+			}
 		}
 		return ranges;
 	}

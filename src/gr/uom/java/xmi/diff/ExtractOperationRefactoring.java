@@ -1,22 +1,16 @@
 package gr.uom.java.xmi.diff;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-
+import gr.uom.java.xmi.UMLOperation;
+import gr.uom.java.xmi.decomposition.*;
+import gr.uom.java.xmi.decomposition.replacement.Replacement;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.refactoringminer.api.Refactoring;
 import org.refactoringminer.api.RefactoringType;
 
-import gr.uom.java.xmi.UMLOperation;
-import gr.uom.java.xmi.decomposition.AbstractCodeFragment;
-import gr.uom.java.xmi.decomposition.AbstractCodeMapping;
-import gr.uom.java.xmi.decomposition.CompositeStatementObject;
-import gr.uom.java.xmi.decomposition.OperationInvocation;
-import gr.uom.java.xmi.decomposition.StatementObject;
-import gr.uom.java.xmi.decomposition.UMLOperationBodyMapper;
-import gr.uom.java.xmi.decomposition.replacement.Replacement;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 public class ExtractOperationRefactoring implements Refactoring {
 	private UMLOperation extractedOperation;
@@ -228,18 +222,20 @@ public class ExtractOperationRefactoring implements Refactoring {
 		ranges.add(getSourceOperationCodeRangeAfterExtraction()
 				.setDescription("source method declaration after extraction")
 				.setCodeElement(sourceOperationAfterExtraction.toString()));
-		for(OperationInvocation invocation : extractedOperationInvocations) {
+		for (OperationInvocation invocation : extractedOperationInvocations) {
 			ranges.add(invocation.codeRange()
 					.setDescription("extracted method invocation")
 					.setCodeElement(invocation.actualString()));
 		}
-		for(StatementObject statement : bodyMapper.getNonMappedLeavesT2()) {
-			ranges.add(statement.codeRange().
-					setDescription("added statement in extracted method declaration"));
-		}
-		for(CompositeStatementObject statement : bodyMapper.getNonMappedInnerNodesT2()) {
-			ranges.add(statement.codeRange().
-					setDescription("added statement in extracted method declaration"));
+		if (bodyMapper != null) {
+			for (StatementObject statement : bodyMapper.getNonMappedLeavesT2()) {
+				ranges.add(statement.codeRange().
+						setDescription("added statement in extracted method declaration"));
+			}
+			for (CompositeStatementObject statement : bodyMapper.getNonMappedInnerNodesT2()) {
+				ranges.add(statement.codeRange().
+						setDescription("added statement in extracted method declaration"));
+			}
 		}
 		return ranges;
 	}
