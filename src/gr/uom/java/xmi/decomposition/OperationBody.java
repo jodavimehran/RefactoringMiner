@@ -97,10 +97,10 @@ public class OperationBody {
         } else if (statement instanceof EnhancedForStatement) {
             EnhancedForStatement enhancedForStatement = (EnhancedForStatement) statement;
             CompositeStatementObject child = new CompositeStatementObject(cu, filePath, enhancedForStatement, parent.getDepth() + 1, CodeElementType.ENHANCED_FOR_STATEMENT);
-            parent.addStatement(child);
             SingleVariableDeclaration variableDeclaration = enhancedForStatement.getParameter();
             VariableDeclaration vd = new VariableDeclaration(cu, filePath, variableDeclaration);
             child.addVariableDeclaration(vd);
+            parent.addStatement(child);
             AbstractExpression variableDeclarationName = new AbstractExpression(cu, filePath, variableDeclaration.getName(), CodeElementType.ENHANCED_FOR_STATEMENT_PARAMETER_NAME);
             child.addExpression(variableDeclarationName);
             if (variableDeclaration.getInitializer() != null) {

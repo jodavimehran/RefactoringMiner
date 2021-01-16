@@ -1,18 +1,13 @@
 package gr.uom.java.xmi.decomposition;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.Statement;
-
 import gr.uom.java.xmi.LocationInfo;
 import gr.uom.java.xmi.LocationInfo.CodeElementType;
 import gr.uom.java.xmi.diff.CodeRange;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Statement;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class CompositeStatementObject extends AbstractStatement {
 
@@ -34,6 +29,9 @@ public class CompositeStatementObject extends AbstractStatement {
 		statement.setIndex(statementList.size());
 		statementList.add(statement);
 		statement.setParent(this);
+		statement.getVariableDeclarations().stream().forEach(variableDeclaration -> {
+			variableDeclaration.getScope().setParentSignature(this.getSignature());
+		});
 	}
 
 	public List<AbstractStatement> getStatements() {
@@ -46,6 +44,9 @@ public class CompositeStatementObject extends AbstractStatement {
 		expression.setIndex(this.getIndex());
 		expressionList.add(expression);
 		expression.setOwner(this);
+		expression.getVariableDeclarations().stream().forEach(variableDeclaration -> {
+			variableDeclaration.getScope().setParentSignature(this.getSignature());
+		});
 	}
 
 	public List<AbstractExpression> getExpressions() {
@@ -545,9 +546,26 @@ public class CompositeStatementObject extends AbstractStatement {
 	public List<String> stringRepresentation() {
 		List<String> stringRepresentation = new ArrayList<String>();
 		stringRepresentation.add(this.toString());
-		for(AbstractStatement statement : statementList) {
+		for (AbstractStatement statement : statementList) {
 			stringRepresentation.addAll(statement.stringRepresentation());
 		}
 		return stringRepresentation;
+	}
+
+	private String getSignature() {
+		String statementType = getLocationInfo().getCodeElementType().getName() != null ? getLocationInfo().getCodeElementType().getName() : toString();
+		CompositeStatementObject parent = getParent();
+		if (parent == null) {
+			return statementType;
+		}
+		List<AbstractStatement> sameTypeSibling = parent.getStatements().stream().filter(st -> statementType.equals(st.getLocationInfo().getCodeElementType().getName())).collect(Collectors.toList());
+		int typeIndex = 1;
+		for (AbstractStatement abstractStatement : sameTypeSibling) {
+			if (abstractStatement.getIndex() == getIndex()) {
+				break;
+			}
+			typeIndex++;
+		}
+		return String.format("%s:%s%d", parent.getSignature(), statementType, typeIndex);
 	}
 }

@@ -3,6 +3,8 @@ package gr.uom.java.xmi.decomposition;
 import gr.uom.java.xmi.LocationInfo;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class VariableScope {
@@ -13,6 +15,8 @@ public class VariableScope {
     private final int startColumn;
     private final int endLine;
     private final int endColumn;
+    private final List<AbstractCodeFragment> statementList = new ArrayList<>();
+    private String parentSignature = "";
 
     public VariableScope(CompilationUnit cu, String filePath, int startOffset, int endOffset) {
         //ASTNode parent = node.getParent();
@@ -78,5 +82,21 @@ public class VariableScope {
     @Override
     public int hashCode() {
         return Objects.hash(filePath, startOffset, endOffset, startLine, startColumn, endLine, endColumn);
+    }
+
+    public void addStatement(AbstractCodeFragment statement) {
+        statementList.add(statement);
+    }
+
+    public List<AbstractCodeFragment> getStatementList() {
+        return statementList;
+    }
+
+    public String getParentSignature() {
+        return parentSignature;
+    }
+
+    public void setParentSignature(String parentSignature) {
+        this.parentSignature = parentSignature;
     }
 }
