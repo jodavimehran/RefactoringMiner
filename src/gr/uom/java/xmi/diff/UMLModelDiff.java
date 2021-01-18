@@ -5,6 +5,7 @@ import gr.uom.java.xmi.decomposition.*;
 import gr.uom.java.xmi.decomposition.replacement.MergeVariableReplacement;
 import gr.uom.java.xmi.decomposition.replacement.Replacement;
 import gr.uom.java.xmi.decomposition.replacement.Replacement.ReplacementType;
+import org.apache.commons.lang3.tuple.Pair;
 import org.refactoringminer.api.Refactoring;
 import org.refactoringminer.api.RefactoringMinerTimedOutException;
 import org.refactoringminer.api.RefactoringType;
@@ -31,7 +32,8 @@ public class UMLModelDiff {
    private List<UMLClassRenameDiff> classRenameDiffList;
    private List<Refactoring> refactorings;
    private Set<String> deletedFolderPaths;
-
+   private Set<Pair<UMLOperation, UMLOperation>> processedOperationPairs = new HashSet<Pair<UMLOperation, UMLOperation>>();
+   
    public UMLModelDiff() {
       this.addedClasses = new ArrayList<UMLClass>();
       this.removedClasses = new ArrayList<UMLClass>();
@@ -2068,20 +2070,24 @@ public class UMLModelDiff {
 	         TreeMap<Integer, List<UMLOperationBodyMapper>> operationBodyMapperMap = new TreeMap<Integer, List<UMLOperationBodyMapper>>();
 	         for(Iterator<UMLOperation> removedOperationIterator = removedOperations.iterator(); removedOperationIterator.hasNext();) {
 	            UMLOperation removedOperation = removedOperationIterator.next();
-
-	            UMLOperationBodyMapper operationBodyMapper = new UMLOperationBodyMapper(removedOperation, addedOperation, null);
-	            int mappings = operationBodyMapper.mappingsWithoutBlocks();
-	            if(mappings > 0 && mappedElementsMoreThanNonMappedT1AndT2(mappings, operationBodyMapper)) {
-	               int exactMatches = operationBodyMapper.exactMatches();
-	               if(operationBodyMapperMap.containsKey(exactMatches)) {
-	                  List<UMLOperationBodyMapper> mapperList = operationBodyMapperMap.get(exactMatches);
-	                  mapperList.add(operationBodyMapper);
-	               }
-	               else {
-	                  List<UMLOperationBodyMapper> mapperList = new ArrayList<UMLOperationBodyMapper>();
-	                  mapperList.add(operationBodyMapper);
-	                  operationBodyMapperMap.put(exactMatches, mapperList);
-	               }
+	            
+	            Pair<UMLOperation, UMLOperation> pair = Pair.of(removedOperation, addedOperation);
+	            if(!processedOperationPairs.contains(pair)) {
+		            UMLOperationBodyMapper operationBodyMapper = new UMLOperationBodyMapper(removedOperation, addedOperation, null);
+		            processedOperationPairs.add(pair);
+		            int mappings = operationBodyMapper.mappingsWithoutBlocks();
+		            if(mappings > 0 && mappedElementsMoreThanNonMappedT1AndT2(mappings, operationBodyMapper)) {
+		               int exactMatches = operationBodyMapper.exactMatches();
+		               if(operationBodyMapperMap.containsKey(exactMatches)) {
+		                  List<UMLOperationBodyMapper> mapperList = operationBodyMapperMap.get(exactMatches);
+		                  mapperList.add(operationBodyMapper);
+		               }
+		               else {
+		                  List<UMLOperationBodyMapper> mapperList = new ArrayList<UMLOperationBodyMapper>();
+		                  mapperList.add(operationBodyMapper);
+		                  operationBodyMapperMap.put(exactMatches, mapperList);
+		               }
+		            }
 	            }
 	         }
 	         if(!operationBodyMapperMap.isEmpty()) {
@@ -2153,20 +2159,24 @@ public class UMLModelDiff {
 	         TreeMap<Integer, List<UMLOperationBodyMapper>> operationBodyMapperMap = new TreeMap<Integer, List<UMLOperationBodyMapper>>();
 	         for(Iterator<UMLOperation> addedOperationIterator = addedOperations.iterator(); addedOperationIterator.hasNext();) {
 	            UMLOperation addedOperation = addedOperationIterator.next();
-
-	            UMLOperationBodyMapper operationBodyMapper = new UMLOperationBodyMapper(removedOperation, addedOperation, null);
-	            int mappings = operationBodyMapper.mappingsWithoutBlocks();
-	            if(mappings > 0 && mappedElementsMoreThanNonMappedT1AndT2(mappings, operationBodyMapper)) {
-	               int exactMatches = operationBodyMapper.exactMatches();
-	               if(operationBodyMapperMap.containsKey(exactMatches)) {
-	                  List<UMLOperationBodyMapper> mapperList = operationBodyMapperMap.get(exactMatches);
-	                  mapperList.add(operationBodyMapper);
-	               }
-	               else {
-	                  List<UMLOperationBodyMapper> mapperList = new ArrayList<UMLOperationBodyMapper>();
-	                  mapperList.add(operationBodyMapper);
-	                  operationBodyMapperMap.put(exactMatches, mapperList);
-	               }
+	            
+	            Pair<UMLOperation, UMLOperation> pair = Pair.of(removedOperation, addedOperation);
+	            if(!processedOperationPairs.contains(pair)) {
+		            UMLOperationBodyMapper operationBodyMapper = new UMLOperationBodyMapper(removedOperation, addedOperation, null);
+		            processedOperationPairs.add(pair);
+		            int mappings = operationBodyMapper.mappingsWithoutBlocks();
+		            if(mappings > 0 && mappedElementsMoreThanNonMappedT1AndT2(mappings, operationBodyMapper)) {
+		               int exactMatches = operationBodyMapper.exactMatches();
+		               if(operationBodyMapperMap.containsKey(exactMatches)) {
+		                  List<UMLOperationBodyMapper> mapperList = operationBodyMapperMap.get(exactMatches);
+		                  mapperList.add(operationBodyMapper);
+		               }
+		               else {
+		                  List<UMLOperationBodyMapper> mapperList = new ArrayList<UMLOperationBodyMapper>();
+		                  mapperList.add(operationBodyMapper);
+		                  operationBodyMapperMap.put(exactMatches, mapperList);
+		               }
+		            }
 	            }
 	         }
 	         if(!operationBodyMapperMap.isEmpty()) {
