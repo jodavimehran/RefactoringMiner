@@ -1,55 +1,69 @@
 package gr.uom.java.xmi.diff;
 
-import gr.uom.java.xmi.*;
-import gr.uom.java.xmi.decomposition.*;
+import gr.uom.java.xmi.UMLAnonymousClass;
+import gr.uom.java.xmi.UMLAttribute;
+import gr.uom.java.xmi.UMLClass;
+import gr.uom.java.xmi.UMLClassMatcher;
+import gr.uom.java.xmi.UMLGeneralization;
+import gr.uom.java.xmi.UMLOperation;
+import gr.uom.java.xmi.UMLParameter;
+import gr.uom.java.xmi.UMLRealization;
+import gr.uom.java.xmi.UMLType;
+import gr.uom.java.xmi.decomposition.AbstractCodeMapping;
+import gr.uom.java.xmi.decomposition.AbstractExpression;
+import gr.uom.java.xmi.decomposition.CompositeStatementObject;
+import gr.uom.java.xmi.decomposition.CompositeStatementObjectMapping;
+import gr.uom.java.xmi.decomposition.LeafMapping;
+import gr.uom.java.xmi.decomposition.OperationInvocation;
+import gr.uom.java.xmi.decomposition.StatementObject;
+import gr.uom.java.xmi.decomposition.UMLOperationBodyMapper;
+import gr.uom.java.xmi.decomposition.UMLOperationBodyMapperComparator;
+import gr.uom.java.xmi.decomposition.VariableDeclaration;
 import gr.uom.java.xmi.decomposition.replacement.MergeVariableReplacement;
 import gr.uom.java.xmi.decomposition.replacement.Replacement;
 import gr.uom.java.xmi.decomposition.replacement.Replacement.ReplacementType;
+import gr.uom.java.xmi.decomposition.replacement.VariableDeclarationReplacement;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.refactoringminer.api.Refactoring;
 import org.refactoringminer.api.RefactoringMinerTimedOutException;
 import org.refactoringminer.api.RefactoringType;
 import org.refactoringminer.util.PrefixSuffixUtils;
 
-import java.util.*;
-import java.util.stream.Collectors;
-
 public class UMLModelDiff {
    private static final int MAXIMUM_NUMBER_OF_COMPARED_METHODS = 100;
-   private List<UMLClass> addedClasses;
-   private List<UMLClass> removedClasses;
+   private final List<UMLClass> addedClasses = new ArrayList<>();
+   private final List<UMLClass> removedClasses = new ArrayList<>();
 
-   private List<UMLGeneralization> addedGeneralizations;
-   private List<UMLGeneralization> removedGeneralizations;
-   private List<UMLGeneralizationDiff> generalizationDiffList;
-   private List<UMLRealization> addedRealizations;
-   private List<UMLRealization> removedRealizations;
-   private List<UMLRealizationDiff> realizationDiffList;
+   private final List<UMLGeneralization> addedGeneralizations = new ArrayList<>();
+   private final List<UMLGeneralization> removedGeneralizations = new ArrayList<>();
+   private final List<UMLGeneralizationDiff> generalizationDiffList = new ArrayList<>();
+   private final List<UMLRealization> addedRealizations = new ArrayList<>();
+   private final List<UMLRealization> removedRealizations = new ArrayList<>();
+   private final List<UMLRealizationDiff> realizationDiffList = new ArrayList<>();
 
-   private List<UMLClassDiff> commonClassDiffList;
-   private List<UMLClassMoveDiff> classMoveDiffList;
-   private List<UMLClassMoveDiff> innerClassMoveDiffList;
-   private List<UMLClassRenameDiff> classRenameDiffList;
-   private List<Refactoring> refactorings;
-   private Set<String> deletedFolderPaths;
-   private Set<Pair<UMLOperation, UMLOperation>> processedOperationPairs = new HashSet<Pair<UMLOperation, UMLOperation>>();
-   
-   public UMLModelDiff() {
-      this.addedClasses = new ArrayList<UMLClass>();
-      this.removedClasses = new ArrayList<UMLClass>();
-      this.addedGeneralizations = new ArrayList<UMLGeneralization>();
-      this.removedGeneralizations = new ArrayList<UMLGeneralization>();
-      this.generalizationDiffList = new ArrayList<UMLGeneralizationDiff>();
-      this.realizationDiffList = new ArrayList<UMLRealizationDiff>();
-      this.addedRealizations = new ArrayList<UMLRealization>();
-      this.removedRealizations = new ArrayList<UMLRealization>();
-      this.commonClassDiffList = new ArrayList<UMLClassDiff>();
-      this.classMoveDiffList = new ArrayList<UMLClassMoveDiff>();
-      this.innerClassMoveDiffList = new ArrayList<UMLClassMoveDiff>();
-      this.classRenameDiffList = new ArrayList<UMLClassRenameDiff>();
-      this.refactorings = new ArrayList<Refactoring>();
-      this.deletedFolderPaths = new LinkedHashSet<String>();
-   }
+   private final List<UMLClassDiff> commonClassDiffList = new ArrayList<>();
+   private final List<UMLClassMoveDiff> classMoveDiffList = new ArrayList<>();
+   private final List<UMLClassMoveDiff> innerClassMoveDiffList = new ArrayList<>();
+   private final List<UMLClassRenameDiff> classRenameDiffList = new ArrayList<>();
+   private final List<Refactoring> refactorings = new ArrayList<>();
+   private final Set<String> deletedFolderPaths = new LinkedHashSet<>();
+
+   private final Set<Pair<UMLOperation, UMLOperation>> processedOperationPairs = new HashSet<>();
 
    public void reportAddedClass(UMLClass umlClass) {
 	   if(!addedClasses.contains(umlClass))
@@ -338,6 +352,10 @@ public class UMLModelDiff {
 
     public List<UMLClass> getRemovedClasses() {
         return new ArrayList<>(removedClasses);
+    }
+
+    public List<UMLClass> getAddedClasses() {
+        return new ArrayList<>(addedClasses);
     }
 
     private String isRenamedClass(UMLClass umlClass) {
@@ -2540,15 +2558,65 @@ public class UMLModelDiff {
     public List<UMLAttribute> getRemovedAttributes() {
         return getAllClassesDiff()
                 .stream()
-                .flatMap(umlClassBaseDiff -> umlClassBaseDiff.getRemovedAttributes().stream())
+                .map(UMLClassBaseDiff::getRemovedAttributes)
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
+    }
+
+    public List<UMLAttribute> getAddedAttributes() {
+        return getAllClassesDiff()
+                .stream()
+                .map(UMLClassBaseDiff::getAddedAttributes)
+                .flatMap(List::stream)
                 .collect(Collectors.toList());
     }
 
     public List<UMLOperation> getRemovedOperations() {
         return getAllClassesDiff()
                 .stream()
-                .flatMap(umlClassBaseDiff -> umlClassBaseDiff.getRemovedOperations().stream())
+                .map(UMLClassBaseDiff::getRemovedOperations)
+                .flatMap(List::stream)
                 .collect(Collectors.toList());
+    }
+
+    public List<UMLOperation> getAddedOperations() {
+        return getAllClassesDiff()
+                .stream()
+                .map(UMLClassBaseDiff::getAddedOperations)
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
+    }
+
+    public Set<Pair<VariableDeclaration, UMLOperation>> getRemovedVariables() {
+        return getAllClassesDiff()
+                .stream()
+                .map(UMLClassBaseDiff::getRemovedVariables)
+                .flatMap(Set::stream)
+                .collect(Collectors.toSet());
+    }
+
+    public Set<Pair<VariableDeclaration, UMLOperation>> getAddedVariables() {
+        return getAllClassesDiff()
+                .stream()
+                .map(UMLClassBaseDiff::getAddedVariables)
+                .flatMap(Set::stream)
+                .collect(Collectors.toSet());
+    }
+
+    public Set<VariableDeclarationReplacement> getChangedScopeVariable() {
+        return getAllClassesDiff()
+                .stream()
+                .map(UMLClassBaseDiff::getChangedScopeVariables)
+                .flatMap(Set::stream)
+                .collect(Collectors.toSet());
+    }
+
+    public Set<Pair<UMLOperation, UMLOperation>> getChangedBodyOperations(){
+        return getAllClassesDiff()
+                .stream()
+                .map(UMLClassBaseDiff::getChangedBodyOperations)
+                .flatMap(Set::stream)
+                .collect(Collectors.toSet());
     }
 
     private List<UMLClassBaseDiff> getAllClassesDiff() {
@@ -2559,4 +2627,5 @@ public class UMLModelDiff {
         allClassesDiff.addAll(classRenameDiffList);
         return allClassesDiff;
     }
+
 }

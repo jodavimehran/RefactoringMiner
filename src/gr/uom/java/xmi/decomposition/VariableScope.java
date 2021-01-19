@@ -1,11 +1,12 @@
 package gr.uom.java.xmi.decomposition;
 
 import gr.uom.java.xmi.LocationInfo;
-import org.eclipse.jdt.core.dom.CompilationUnit;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import org.eclipse.jdt.core.dom.CompilationUnit;
 
 public class VariableScope {
     private final String filePath;
@@ -46,6 +47,32 @@ public class VariableScope {
         }
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(filePath, startOffset, endOffset, startLine, startColumn, endLine, endColumn);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+        VariableScope other = (VariableScope) obj;
+        return startOffset == other.startOffset &&
+                endOffset == other.endOffset &&
+                startLine == other.startLine &&
+                startColumn == other.startColumn &&
+                endLine == other.endLine &&
+                endColumn == other.endColumn &&
+                Objects.equals(filePath, other.filePath);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%d:%d-%d:%d", startLine, startColumn, endLine, endColumn);
+    }
+
     public boolean subsumes(LocationInfo other) {
         return this.filePath.equals(other.getFilePath()) &&
                 this.startOffset <= other.getStartOffset() &&
@@ -58,30 +85,6 @@ public class VariableScope {
 
     public int getEndOffset() {
         return endOffset;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("%d:%d-%d:%d", startLine, startColumn, endLine, endColumn);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        VariableScope that = (VariableScope) o;
-        return startOffset == that.startOffset &&
-                endOffset == that.endOffset &&
-                startLine == that.startLine &&
-                startColumn == that.startColumn &&
-                endLine == that.endLine &&
-                endColumn == that.endColumn &&
-                Objects.equals(filePath, that.filePath);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(filePath, startOffset, endOffset, startLine, startColumn, endLine, endColumn);
     }
 
     public void addStatement(AbstractCodeFragment statement) {

@@ -9,7 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.refactoringminer.api.Refactoring;
 import org.refactoringminer.api.RefactoringMinerTimedOutException;
 import org.refactoringminer.util.PrefixSuffixUtils;
@@ -33,6 +35,7 @@ import gr.uom.java.xmi.decomposition.replacement.Replacement.ReplacementType;
 import gr.uom.java.xmi.decomposition.replacement.SplitVariableReplacement;
 import gr.uom.java.xmi.decomposition.replacement.ConsistentReplacementDetector;
 import gr.uom.java.xmi.decomposition.replacement.MergeVariableReplacement;
+import gr.uom.java.xmi.decomposition.replacement.VariableDeclarationReplacement;
 
 public abstract class UMLClassBaseDiff implements Comparable<UMLClassBaseDiff> {
 
@@ -958,6 +961,10 @@ public abstract class UMLClassBaseDiff implements Comparable<UMLClassBaseDiff> {
 	}
 
 	public UMLAttribute findAttributeInOriginalClass(String attributeName) {
+		return getUmlAttribute(attributeName, originalClass, removedEnumConstants);
+	}
+
+	private UMLAttribute getUmlAttribute(String attributeName, UMLClass originalClass, List<UMLEnumConstant> removedEnumConstants) {
 		for(UMLAttribute attribute : originalClass.getAttributes()) {
 			if(attribute.getName().equals(attributeName)) {
 				return attribute;
@@ -972,17 +979,7 @@ public abstract class UMLClassBaseDiff implements Comparable<UMLClassBaseDiff> {
 	}
 
 	public UMLAttribute findAttributeInNextClass(String attributeName) {
-		for(UMLAttribute attribute : nextClass.getAttributes()) {
-			if(attribute.getName().equals(attributeName)) {
-				return attribute;
-			}
-		}
-		for(UMLEnumConstant enumConstant : nextClass.getEnumConstants()) {
-			if(enumConstant.getName().equals(attributeName) && addedEnumConstants.contains(enumConstant)) {
-				return enumConstant;
-			}
-		}
-		return null;
+		return getUmlAttribute(attributeName, nextClass, addedEnumConstants);
 	}
 
 	private boolean inconsistentAttributeRename(Replacement pattern,
@@ -1013,7 +1010,7 @@ public abstract class UMLClassBaseDiff implements Comparable<UMLClassBaseDiff> {
 			boolean variables2Contains = (allVariables2.contains(pattern.getAfter()) &&
 					!mapper.getOperation2().getParameterNameList().contains(pattern.getAfter())) ||
 					allVariables2.contains("this."+pattern.getAfter());
-			if(variables1contains && !variables2Contains) {	
+			if(variables1contains && !variables2Contains) {
 				counter++;
 			}
 			if(variables2Contains && !variables1contains) {
@@ -1080,7 +1077,7 @@ public abstract class UMLClassBaseDiff implements Comparable<UMLClassBaseDiff> {
 						UMLOperation addedOperation = bestMapper.getOperation2();
 						addedOperations.remove(addedOperation);
 						removedOperationIterator.remove();
-	
+
 						UMLOperationDiff operationSignatureDiff = new UMLOperationDiff(removedOperation, addedOperation, bestMapper.getMappings());
 						operationDiffList.add(operationSignatureDiff);
 						refactorings.addAll(operationSignatureDiff.getRefactorings());
@@ -1120,7 +1117,7 @@ public abstract class UMLClassBaseDiff implements Comparable<UMLClassBaseDiff> {
 						addedOperation = bestMapper.getOperation2();
 						removedOperations.remove(removedOperation);
 						addedOperationIterator.remove();
-	
+
 						UMLOperationDiff operationSignatureDiff = new UMLOperationDiff(removedOperation, addedOperation, bestMapper.getMappings());
 						operationDiffList.add(operationSignatureDiff);
 						refactorings.addAll(operationSignatureDiff.getRefactorings());
@@ -1488,7 +1485,7 @@ public abstract class UMLClassBaseDiff implements Comparable<UMLClassBaseDiff> {
 		Set<OperationInvocation> intersection = new LinkedHashSet<OperationInvocation>(removedOperationInvocations);
 		intersection.retainAll(addedOperationInvocations);
 		int numberOfInvocationsMissingFromRemovedOperation = new LinkedHashSet<OperationInvocation>(removedOperationInvocations).size() - intersection.size();
-		
+
 		Set<OperationInvocation> operationInvocationsInMethodsCalledByAddedOperation = new LinkedHashSet<OperationInvocation>();
 		for(OperationInvocation addedOperationInvocation : addedOperationInvocations) {
 			if(!intersection.contains(addedOperationInvocation)) {
@@ -1504,7 +1501,7 @@ public abstract class UMLClassBaseDiff implements Comparable<UMLClassBaseDiff> {
 		}
 		Set<OperationInvocation> newIntersection = new LinkedHashSet<OperationInvocation>(removedOperationInvocations);
 		newIntersection.retainAll(operationInvocationsInMethodsCalledByAddedOperation);
-		
+
 		Set<OperationInvocation> removedOperationInvocationsWithIntersectionsAndGetterInvocationsSubtracted = new LinkedHashSet<OperationInvocation>(removedOperationInvocations);
 		removedOperationInvocationsWithIntersectionsAndGetterInvocationsSubtracted.removeAll(intersection);
 		removedOperationInvocationsWithIntersectionsAndGetterInvocationsSubtracted.removeAll(newIntersection);
@@ -1526,7 +1523,7 @@ public abstract class UMLClassBaseDiff implements Comparable<UMLClassBaseDiff> {
 		Set<OperationInvocation> intersection = new LinkedHashSet<OperationInvocation>(removedOperationInvocations);
 		intersection.retainAll(addedOperationInvocations);
 		int numberOfInvocationsMissingFromAddedOperation = new LinkedHashSet<OperationInvocation>(addedOperationInvocations).size() - intersection.size();
-		
+
 		Set<OperationInvocation> operationInvocationsInMethodsCalledByRemovedOperation = new LinkedHashSet<OperationInvocation>();
 		for(OperationInvocation removedOperationInvocation : removedOperationInvocations) {
 			if(!intersection.contains(removedOperationInvocation)) {
@@ -1542,7 +1539,7 @@ public abstract class UMLClassBaseDiff implements Comparable<UMLClassBaseDiff> {
 		}
 		Set<OperationInvocation> newIntersection = new LinkedHashSet<OperationInvocation>(addedOperationInvocations);
 		newIntersection.retainAll(operationInvocationsInMethodsCalledByRemovedOperation);
-		
+
 		int numberOfInvocationsCalledByAddedOperationFoundInOtherRemovedOperations = newIntersection.size();
 		int numberOfInvocationsMissingFromAddedOperationWithoutThoseFoundInOtherRemovedOperations = numberOfInvocationsMissingFromAddedOperation - numberOfInvocationsCalledByAddedOperationFoundInOtherRemovedOperations;
 		return numberOfInvocationsCalledByAddedOperationFoundInOtherRemovedOperations > numberOfInvocationsMissingFromAddedOperationWithoutThoseFoundInOtherRemovedOperations;
@@ -1583,7 +1580,7 @@ public abstract class UMLClassBaseDiff implements Comparable<UMLClassBaseDiff> {
 				}
 			}
 		}
-		
+
 		UMLOperation operationBefore2 = null;
 		UMLOperation operationAfter2 = null;
 		List<UMLOperation> nextClassOperations = nextClass.getOperations();
@@ -1598,17 +1595,17 @@ public abstract class UMLClassBaseDiff implements Comparable<UMLClassBaseDiff> {
 				}
 			}
 		}
-		
+
 		boolean operationsBeforeMatch = false;
 		if(operationBefore1 != null && operationBefore2 != null) {
 			operationsBeforeMatch = operationBefore1.equalParameterTypes(operationBefore2) && operationBefore1.getName().equals(operationBefore2.getName());
 		}
-		
+
 		boolean operationsAfterMatch = false;
 		if(operationAfter1 != null && operationAfter2 != null) {
 			operationsAfterMatch = operationAfter1.equalParameterTypes(operationAfter2) && operationAfter1.getName().equals(operationAfter2.getName());
 		}
-		
+
 		return operationsBeforeMatch || operationsAfterMatch;
 	}
 
@@ -1753,5 +1750,33 @@ public abstract class UMLClassBaseDiff implements Comparable<UMLClassBaseDiff> {
 
 	public UMLModelDiff getModelDiff() {
 		return modelDiff;
+	}
+
+    public Set<Pair<VariableDeclaration, UMLOperation>> getRemovedVariables() {
+        return operationBodyMapperList.stream()
+                .map(UMLOperationBodyMapper::getRemovedVariables)
+                .flatMap(Set::stream)
+				.collect(java.util.stream.Collectors.toSet());
+    }
+
+	public Set<Pair<VariableDeclaration, UMLOperation>> getAddedVariables() {
+		return operationBodyMapperList.stream()
+				.map(UMLOperationBodyMapper::getAddedVariables)
+				.flatMap(Set::stream)
+				.collect(java.util.stream.Collectors.toSet());
+	}
+
+	public Set<VariableDeclarationReplacement> getChangedScopeVariables() {
+		return operationBodyMapperList.stream()
+				.map(UMLOperationBodyMapper::getChangedVariable)
+				.flatMap(Set::stream)
+				.collect(java.util.stream.Collectors.toSet());
+	}
+
+	public Set<Pair<UMLOperation, UMLOperation>> getChangedBodyOperations(){
+		return operationBodyMapperList.stream()
+				.filter(UMLOperationBodyMapper::notSame)
+				.map(UMLOperationBodyMapper::getOperationPair)
+				.collect(Collectors.toSet());
 	}
 }

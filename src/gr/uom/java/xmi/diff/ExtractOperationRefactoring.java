@@ -1,16 +1,22 @@
 package gr.uom.java.xmi.diff;
 
-import gr.uom.java.xmi.UMLOperation;
-import gr.uom.java.xmi.decomposition.*;
-import gr.uom.java.xmi.decomposition.replacement.Replacement;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.refactoringminer.api.Refactoring;
-import org.refactoringminer.api.RefactoringType;
-
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.refactoringminer.api.Refactoring;
+import org.refactoringminer.api.RefactoringType;
+
+import gr.uom.java.xmi.UMLOperation;
+import gr.uom.java.xmi.decomposition.AbstractCodeFragment;
+import gr.uom.java.xmi.decomposition.AbstractCodeMapping;
+import gr.uom.java.xmi.decomposition.CompositeStatementObject;
+import gr.uom.java.xmi.decomposition.OperationInvocation;
+import gr.uom.java.xmi.decomposition.StatementObject;
+import gr.uom.java.xmi.decomposition.UMLOperationBodyMapper;
+import gr.uom.java.xmi.decomposition.replacement.Replacement;
 
 public class ExtractOperationRefactoring implements Refactoring {
 	private UMLOperation extractedOperation;

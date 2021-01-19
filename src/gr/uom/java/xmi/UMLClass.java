@@ -3,78 +3,48 @@ package gr.uom.java.xmi;
 import gr.uom.java.xmi.diff.StringDistance;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, Serializable, LocationInfoProvider {
-	private String qualifiedName;
-    private String sourceFile;
-    private String sourceFolder;
-    private String visibility;
-	private boolean isAbstract;
-	private boolean isInterface;
-	private boolean isEnum;
-	private boolean topLevel;
-    private UMLType superclass;
-    private List<UMLType> implementedInterfaces;
-    private List<UMLAnonymousClass> anonymousClassList;
-    private List<String> importedTypes;
-    private List<UMLTypeParameter> typeParameters;
-    private UMLJavadoc javadoc;
-    private List<UMLAnnotation> annotations;
-    private List<UMLEnumConstant> enumConstants;
-    
-    public UMLClass(String packageName, String name, LocationInfo locationInfo, boolean topLevel, List<String> importedTypes) {
-    	super();
-    	this.locationInfo = locationInfo;
-    	this.packageName = packageName;
-        this.name = name;
-        if(packageName.equals(""))
-        	this.qualifiedName = name;
-    	else
-    		this.qualifiedName = packageName + "." + name;
+	private final String qualifiedName;
+	private final String sourceFile;
+	private final String sourceFolder;
+	private final String visibility;
+	private final boolean isAbstract;
+	private final boolean isInterface;
+	private final boolean isEnum;
+	private final boolean topLevel;
+	private final UMLType superclass;
+	private final List<UMLType> implementedInterfaces = new ArrayList<>();
+	private final List<UMLAnonymousClass> anonymousClassList = new ArrayList<>();
+	private final List<String> importedTypes;
+	private final List<UMLTypeParameter> typeParameters = new ArrayList<>();
+	private final UMLJavadoc javadoc;
+	private final List<UMLAnnotation> annotations = new ArrayList<>();
+	private final List<UMLEnumConstant> enumConstants = new ArrayList<>();
 
-        this.sourceFile = getSourceFile();
-        this.sourceFolder = "";
-        if(packageName.equals("")) {
-        	int index = sourceFile.indexOf(name);
-        	if(index != -1) {
-    			this.sourceFolder = sourceFile.substring(0, index);
-    		}
-        }
-        else {
-        	if(topLevel) {
-        		int index = sourceFile.indexOf(packageName.replace('.', '/'));
-        		if(index != -1) {
-        			this.sourceFolder = sourceFile.substring(0, index);
-        		}
-        	}
-        	else {
-        		int index = -1;
-        		if(packageName.contains(".")) {
-        			String realPackageName = packageName.substring(0, packageName.lastIndexOf('.'));
-        			index = sourceFile.indexOf(realPackageName.replace('.', '/'));
-        		}
-        		else {
-        			index = sourceFile.indexOf(packageName);
-        		}
-        		if(index != -1) {
-        			this.sourceFolder = sourceFile.substring(0, index);
-        		}
-        	}
-        }
-        this.isAbstract = false;
-        this.isInterface = false;
-        this.topLevel = topLevel;
-        this.superclass = null;
-        this.implementedInterfaces = new ArrayList<UMLType>();
-        this.anonymousClassList = new ArrayList<UMLAnonymousClass>();
-        this.importedTypes = importedTypes;
-        this.typeParameters = new ArrayList<UMLTypeParameter>();
-        this.annotations = new ArrayList<UMLAnnotation>();
-        this.enumConstants = new ArrayList<UMLEnumConstant>();
+    public UMLClass(String packageName, String name, LocationInfo locationInfo, List<String> importedTypes, UMLJavadoc javadoc, UMLType superclass, String visibility, boolean topLevel, boolean isEnum, boolean isAbstract, boolean isInterface) {
+		super(locationInfo, packageName, name);
+		this.qualifiedName = packageName.equals("") ? name : packageName + "." + name;
+		this.sourceFile = getSourceFile();
+		this.sourceFolder = getSourceFolder(packageName, name, topLevel);
+		this.visibility = visibility;
+		this.isAbstract = isAbstract;
+		this.isInterface = isInterface;
+		this.isEnum = isEnum;
+		this.topLevel = topLevel;
+		this.superclass = superclass;
+		this.importedTypes = importedTypes;
+		this.javadoc = javadoc;
     }
 
-    public List<UMLTypeParameter> getTypeParameters() {
+	public List<UMLTypeParameter> getTypeParameters() {
 		return typeParameters;
 	}
 
@@ -120,57 +90,31 @@ public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, 
 
     //returns true if the "innerClass" parameter is inner class of this
     public boolean isInnerClass(UMLClass innerClass) {
-    	if(this.getName().equals(innerClass.packageName))
-    		return true;
-    	return false;
-    }
+		return this.getName().equals(innerClass.packageName);
+	}
 
     public boolean isTopLevel() {
 		return topLevel;
-	}
-
-	public void setTopLevel(boolean topLevel) {
-		this.topLevel = topLevel;
 	}
 
 	public String getVisibility() {
 		return visibility;
 	}
 
-	public void setVisibility(String visibility) {
-		this.visibility = visibility;
-	}
-
 	public boolean isEnum() {
 		return isEnum;
-	}
-
-	public void setEnum(boolean isEnum) {
-		this.isEnum = isEnum;
 	}
 
 	public boolean isInterface() {
 		return isInterface;
 	}
 
-	public void setInterface(boolean isInterface) {
-		this.isInterface = isInterface;
-	}
-
 	public boolean isAbstract() {
 		return isAbstract;
 	}
 
-	public void setAbstract(boolean isAbstract) {
-		this.isAbstract = isAbstract;
-	}
-
     public UMLType getSuperclass() {
 		return superclass;
-	}
-
-	public void setSuperclass(UMLType superclass) {
-		this.superclass = superclass;
 	}
 
 	public void addImplementedInterface(UMLType implementedInterface) {
@@ -191,10 +135,6 @@ public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, 
 
 	public UMLJavadoc getJavadoc() {
 		return javadoc;
-	}
-
-	public void setJavadoc(UMLJavadoc javadoc) {
-		this.javadoc = javadoc;
 	}
 
     public UMLEnumConstant containsEnumConstant(UMLEnumConstant otherEnumConstant) {
@@ -286,18 +226,14 @@ public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, 
     public boolean hasSameNameAndKind(UMLClass umlClass) {
     	if(!this.name.equals(umlClass.name))
     		return false;
-    	if(!hasSameKind(umlClass))
-    		return false;
-    	return true;
-    }
+		return hasSameKind(umlClass);
+	}
 
     public boolean hasSameKind(UMLClass umlClass) {
     	if(this.isInterface != umlClass.isInterface)
     		return false;
-    	if(!equalTypeParameters(umlClass))
-    		return false;
-    	return true;
-    }
+		return equalTypeParameters(umlClass);
+	}
 
 	private boolean equalTypeParameters(UMLClass umlClass) {
 		return this.typeParameters.equals(umlClass.typeParameters) || this.getTypeParameterNames().equals(umlClass.getTypeParameterNames());
@@ -321,8 +257,8 @@ public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, 
 	}
 
 	public String toString() {
-    	return getName();
-    }
+		return getName();
+	}
 
 	public int compareTo(UMLClass umlClass) {
 		return this.toString().compareTo(umlClass.toString());
@@ -415,5 +351,38 @@ public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, 
 			}
 		}
 		return new LinkedHashMap<String, Set<String>>();
+	}
+
+	private String getSourceFolder(String packageName, String name, boolean topLevel) {
+		String sourceFolder;
+		if(packageName.equals("")) {
+			int index = sourceFile.indexOf(name);
+			sourceFolder = getSourceFolder(index);
+		}
+		else {
+			if(topLevel) {
+				int index = sourceFile.indexOf(packageName.replace('.', '/'));
+				sourceFolder = getSourceFolder(index);
+			}
+			else {
+				int index;
+				if(packageName.contains(".")) {
+					String realPackageName = packageName.substring(0, packageName.lastIndexOf('.'));
+					index = sourceFile.indexOf(realPackageName.replace('.', '/'));
+				}
+				else {
+					index = sourceFile.indexOf(packageName);
+				}
+				sourceFolder = getSourceFolder(index);
+			}
+		}
+		return sourceFolder;
+	}
+
+	private String getSourceFolder(int index) {
+		if (index != -1) {
+			return sourceFile.substring(0, index);
+		}
+		return "";
 	}
 }

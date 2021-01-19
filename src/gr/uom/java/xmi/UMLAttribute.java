@@ -15,7 +15,7 @@ public class UMLAttribute implements Comparable<UMLAttribute>, Serializable, Loc
 	private UMLType type;
 	private String visibility;
 	private String className;
-	private UMLClass umlClass;
+	private UMLType superclass;
 	private boolean isFinal;
 	private boolean isStatic;
 	private VariableDeclaration variableDeclaration;
@@ -75,14 +75,6 @@ public class UMLAttribute implements Comparable<UMLAttribute>, Serializable, Loc
 
 	public void setClassName(String className) {
 		this.className = className;
-	}
-
-	public UMLClass getUmlClass() {
-		return umlClass;
-	}
-
-	public void setUmlClass(UMLClass umlClass) {
-		this.umlClass = umlClass;
 	}
 
 	public String getName() {
@@ -187,5 +179,13 @@ public class UMLAttribute implements Comparable<UMLAttribute>, Serializable, Loc
 		int distance = StringDistance.editDistance(s1, s2);
 		double normalized = (double)distance/(double)Math.max(s1.length(), s2.length());
 		return normalized;
+	}
+
+	public UMLType getSuperclass() {
+		return superclass;
+	}
+
+	public void setSuperclass(UMLType superclass) {
+		this.superclass = superclass;
 	}
 }

@@ -1,17 +1,55 @@
 package gr.uom.java.xmi.decomposition;
 
+import gr.uom.java.xmi.UMLAnonymousClass;
+import gr.uom.java.xmi.UMLAttribute;
+import gr.uom.java.xmi.UMLOperation;
+import gr.uom.java.xmi.UMLParameter;
+import gr.uom.java.xmi.UMLType;
 import gr.uom.java.xmi.LocationInfo.CodeElementType;
-import gr.uom.java.xmi.*;
-import gr.uom.java.xmi.decomposition.replacement.*;
+import gr.uom.java.xmi.decomposition.replacement.AddVariableReplacement;
+import gr.uom.java.xmi.decomposition.replacement.ClassInstanceCreationWithMethodInvocationReplacement;
+import gr.uom.java.xmi.decomposition.replacement.CompositeReplacement;
+import gr.uom.java.xmi.decomposition.replacement.IntersectionReplacement;
+import gr.uom.java.xmi.decomposition.replacement.MergeVariableReplacement;
+import gr.uom.java.xmi.decomposition.replacement.MethodInvocationReplacement;
+import gr.uom.java.xmi.decomposition.replacement.MethodInvocationWithClassInstanceCreationReplacement;
+import gr.uom.java.xmi.decomposition.replacement.ObjectCreationReplacement;
+import gr.uom.java.xmi.decomposition.replacement.Replacement;
+import gr.uom.java.xmi.decomposition.replacement.SplitVariableReplacement;
 import gr.uom.java.xmi.decomposition.replacement.Replacement.ReplacementType;
+import gr.uom.java.xmi.decomposition.replacement.VariableDeclarationReplacement;
+import gr.uom.java.xmi.decomposition.replacement.VariableReplacementWithMethodInvocation;
 import gr.uom.java.xmi.decomposition.replacement.VariableReplacementWithMethodInvocation.Direction;
-import gr.uom.java.xmi.diff.*;
+import gr.uom.java.xmi.diff.CandidateAttributeRefactoring;
+import gr.uom.java.xmi.diff.CandidateMergeVariableRefactoring;
+import gr.uom.java.xmi.diff.CandidateSplitVariableRefactoring;
+import gr.uom.java.xmi.diff.ExtractVariableRefactoring;
+import gr.uom.java.xmi.diff.StringDistance;
+import gr.uom.java.xmi.diff.UMLClassBaseDiff;
+import gr.uom.java.xmi.diff.UMLModelDiff;
+import gr.uom.java.xmi.diff.UMLOperationDiff;
+import gr.uom.java.xmi.diff.UMLParameterDiff;
+
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.regex.Pattern;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.refactoringminer.api.Refactoring;
 import org.refactoringminer.api.RefactoringMinerTimedOutException;
 import org.refactoringminer.util.PrefixSuffixUtils;
-
-import java.util.*;
-import java.util.regex.Pattern;
 
 public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper> {
 	public static final String SPLIT_CONCAT_STRING_PATTERN = "(\\s)*(\\+)(\\s)*";
@@ -22,8 +60,8 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 	private final UMLOperation operation2;
 	private final UMLClassBaseDiff classDiff;
 
-	private final Set<VariableDeclaration> removedVariables = new LinkedHashSet<>();
-	private final Set<VariableDeclaration> addedVariables = new LinkedHashSet<>();
+	private final Set<Pair<VariableDeclaration, UMLOperation>> removedVariables = new LinkedHashSet<>();
+	private final Set<Pair<VariableDeclaration, UMLOperation>> addedVariables = new LinkedHashSet<>();
 	private final Set<VariableDeclarationReplacement> changedVariable = new LinkedHashSet<>();
 	private final Set<CandidateAttributeRefactoring> candidateAttributeRenames = new LinkedHashSet<>();
 	private final Set<CandidateMergeVariableRefactoring> candidateAttributeMerges = new LinkedHashSet<>();
@@ -37,6 +75,7 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 	private final List<UMLOperationBodyMapper> childMappers = new ArrayList<>();
 	private final Map<AbstractCodeFragment, UMLOperation> codeFragmentOperationMap1 = new LinkedHashMap<>();
 	private final Map<AbstractCodeFragment, UMLOperation> codeFragmentOperationMap2 = new LinkedHashMap<>();
+	private final boolean same;
 
 	private UMLModelDiff modelDiff;
 	private UMLOperation callSiteOperation;
@@ -48,6 +87,7 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 			this.modelDiff = classDiff.getModelDiff();
 		this.operation1 = operation1;
 		this.operation2 = operation2;
+		this.same = checkSimilarity();
 		OperationBody body1 = operation1.getBody();
 		OperationBody body2 = operation2.getBody();
 		if (body1 != null && body2 != null) {
@@ -144,7 +184,7 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 			this.modelDiff = classDiff.getModelDiff();
 		this.operation1 = parentMapper.operation1;
 		this.operation2 = parentMapper.operation2;
-
+		same = checkSimilarity();
 		if(lambda1.getExpression() != null && lambda2.getExpression() != null) {
 			List<AbstractExpression> leaves1 = new ArrayList<AbstractExpression>();
 			leaves1.add(lambda1.getExpression());
@@ -249,6 +289,7 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 		this.callSiteOperation = operationBodyMapper.operation2;
 		this.operation2 = addedOperation;
 		this.classDiff = classDiff;
+		this.same = checkSimilarity();
 
 		OperationBody addedOperationBody = addedOperation.getBody();
 		if(addedOperationBody != null) {
@@ -470,7 +511,7 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 		this.operation2 = operationBodyMapper.operation2;
 		this.callSiteOperation = operationBodyMapper.operation1;
 		this.classDiff = classDiff;
-
+		this.same = checkSimilarity();
 		OperationBody removedOperationBody = removedOperation.getBody();
 		if(removedOperationBody != null) {
 			CompositeStatementObject composite1 = removedOperationBody.getCompositeStatement();
@@ -4272,11 +4313,11 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 		return false;
 	}
 
-	public Set<VariableDeclaration> getRemovedVariables() {
+	public Set<Pair<VariableDeclaration, UMLOperation>> getRemovedVariables() {
 		return removedVariables;
 	}
 
-	public Set<VariableDeclaration> getAddedVariables() {
+	public Set<Pair<VariableDeclaration, UMLOperation>> getAddedVariables() {
 		return addedVariables;
 	}
 
@@ -4284,4 +4325,24 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 		return changedVariable;
 	}
 
+	private boolean checkSimilarity(){
+		List<String> body1 = operation1.getBody().stringRepresentation();
+		List<String> body2 = operation2.getBody().stringRepresentation();
+
+		if (body1 == null && body2 == null) return true;
+
+		if ((body1 == null && body2!= null) || (body1 != null && body2== null) || (body1.size() != body2.size()))
+		{
+			return false;
+		}
+		return body1.equals(body2);
+	}
+
+	public boolean notSame() {
+		return !same;
+	}
+
+	public Pair<UMLOperation, UMLOperation> getOperationPair(){
+		return ImmutablePair.of(operation1, operation2);
+	}
 }

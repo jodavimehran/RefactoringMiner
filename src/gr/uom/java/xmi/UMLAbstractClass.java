@@ -12,17 +12,17 @@ import gr.uom.java.xmi.diff.RenamePattern;
 import gr.uom.java.xmi.diff.StringDistance;
 
 public abstract class UMLAbstractClass {
-	protected LocationInfo locationInfo;
-	protected String packageName;
-	protected String name;
-	protected List<UMLOperation> operations;
-	protected List<UMLAttribute> attributes;
-	protected List<UMLComment> comments;
+	protected final LocationInfo locationInfo;
+	protected final String packageName;
+	protected final String name;
+	protected final List<UMLOperation> operations = new ArrayList<>();
+	protected final List<UMLAttribute> attributes = new ArrayList<>();
+	protected final List<UMLComment> comments = new ArrayList<>();
 
-	public UMLAbstractClass() {
-        this.operations = new ArrayList<UMLOperation>();
-        this.attributes = new ArrayList<UMLAttribute>();
-        this.comments = new ArrayList<UMLComment>();
+	public UMLAbstractClass(LocationInfo locationInfo, String packageName, String name) {
+        this.locationInfo = locationInfo;
+        this.packageName = packageName;
+        this.name = name;
 	}
 
 	public LocationInfo getLocationInfo() {

@@ -6,6 +6,8 @@ import gr.uom.java.xmi.diff.ChangeVariableTypeRefactoring;
 import gr.uom.java.xmi.diff.MergeVariableRefactoring;
 import gr.uom.java.xmi.diff.RenameVariableRefactoring;
 import gr.uom.java.xmi.diff.SplitVariableRefactoring;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.refactoringminer.api.Refactoring;
 
 import java.util.*;
@@ -60,12 +62,16 @@ public class VariableChangeAnalysis {
         return (double) intersection / ((double) intersection + b + c);
     }
 
-    public Set<VariableDeclaration> getRemovedVariables() {
-        return removedVariables;
+    public Set<Pair<VariableDeclaration, UMLOperation>> getRemovedVariables() {
+        return removedVariables.stream()
+                .map(addedVariable -> ImmutablePair.of(addedVariable, operation1))
+                .collect(Collectors.toSet());
     }
 
-    public Set<VariableDeclaration> getAddedVariables() {
-        return addedVariables;
+    public Set<Pair<VariableDeclaration, UMLOperation>> getAddedVariables() {
+        return addedVariables.stream()
+                .map(addedVariable -> ImmutablePair.of(addedVariable, operation2))
+                .collect(Collectors.toSet());
     }
 
     public Set<VariableDeclarationReplacement> getChangedVariable() {

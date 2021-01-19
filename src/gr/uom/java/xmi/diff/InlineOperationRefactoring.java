@@ -1,22 +1,31 @@
 package gr.uom.java.xmi.diff;
 
-import gr.uom.java.xmi.UMLOperation;
-import gr.uom.java.xmi.decomposition.*;
-import gr.uom.java.xmi.decomposition.replacement.Replacement;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.refactoringminer.api.Refactoring;
 import org.refactoringminer.api.RefactoringType;
 
-import java.util.*;
+import gr.uom.java.xmi.UMLOperation;
+import gr.uom.java.xmi.decomposition.AbstractCodeFragment;
+import gr.uom.java.xmi.decomposition.AbstractCodeMapping;
+import gr.uom.java.xmi.decomposition.CompositeStatementObject;
+import gr.uom.java.xmi.decomposition.OperationInvocation;
+import gr.uom.java.xmi.decomposition.StatementObject;
+import gr.uom.java.xmi.decomposition.UMLOperationBodyMapper;
+import gr.uom.java.xmi.decomposition.replacement.Replacement;
 
 public class InlineOperationRefactoring implements Refactoring {
-	private UMLOperation inlinedOperation;
-	private UMLOperation targetOperationAfterInline;
-	private UMLOperation targetOperationBeforeInline;
-	private List<OperationInvocation> inlinedOperationInvocations;
+	private final UMLOperation inlinedOperation;
+	private final UMLOperation targetOperationAfterInline;
+	private final UMLOperation targetOperationBeforeInline;
+	private final List<OperationInvocation> inlinedOperationInvocations;
 	private Set<Replacement> replacements;
-	private Set<AbstractCodeFragment> inlinedCodeFragmentsFromInlinedOperation;
-	private Set<AbstractCodeFragment> inlinedCodeFragmentsInTargetOperation;
+	private final Set<AbstractCodeFragment> inlinedCodeFragmentsFromInlinedOperation = new LinkedHashSet<>();
+	private final Set<AbstractCodeFragment> inlinedCodeFragmentsInTargetOperation = new LinkedHashSet<>();
 	private UMLOperationBodyMapper bodyMapper;
 
 	public InlineOperationRefactoring(UMLOperation inlinedOperation, UMLOperation targetOperationBeforeInline, UMLOperation targetOperationAfterInline) {
@@ -24,8 +33,6 @@ public class InlineOperationRefactoring implements Refactoring {
 		this.targetOperationAfterInline = targetOperationAfterInline;
 		this.targetOperationBeforeInline = targetOperationBeforeInline;
 		this.inlinedOperationInvocations = new ArrayList<>();
-		this.inlinedCodeFragmentsFromInlinedOperation = new HashSet<>();
-		this.inlinedCodeFragmentsInTargetOperation = new HashSet<>();
 	}
 
 	public InlineOperationRefactoring(UMLOperationBodyMapper bodyMapper, UMLOperation targetOperationBeforeInline,
@@ -36,8 +43,6 @@ public class InlineOperationRefactoring implements Refactoring {
 		this.targetOperationBeforeInline = targetOperationBeforeInline;
 		this.inlinedOperationInvocations = operationInvocations;
 		this.replacements = bodyMapper.getReplacements();
-		this.inlinedCodeFragmentsFromInlinedOperation = new LinkedHashSet<AbstractCodeFragment>();
-		this.inlinedCodeFragmentsInTargetOperation = new LinkedHashSet<AbstractCodeFragment>();
 		for(AbstractCodeMapping mapping : bodyMapper.getMappings()) {
 			this.inlinedCodeFragmentsFromInlinedOperation.add(mapping.getFragment1());
 			this.inlinedCodeFragmentsInTargetOperation.add(mapping.getFragment2());
