@@ -1229,7 +1229,7 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 					else if((switchParentEntry = multipleMappingsUnderTheSameSwitch(mappingSet)) != null) {
 						LeafMapping bestMapping = findBestMappingBasedOnMappedSwitchCases(switchParentEntry, mappingSet);
 						mappings.add(bestMapping);
-						leaves2.remove(bestMapping.getFragment1());
+						leaves2.remove(bestMapping.getFragment2());
 						leafIterator1.remove();
 					}
 					else {
