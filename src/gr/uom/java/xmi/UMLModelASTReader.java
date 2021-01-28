@@ -79,8 +79,9 @@ public class UMLModelASTReader {
 			parser.setStatementsRecovery(true);
 			String javaFileContent = javaFileContents.get(filePath);
 			parser.setSource(javaFileContent.toCharArray());
-			if(javaFileContent.contains(FREE_MARKER_GENERATED)) {
-				return;
+			if(javaFileContent.contains(FREE_MARKER_GENERATED) &&
+					!javaFileContent.contains("private static final String FREE_MARKER_GENERATED = \"generated using freemarker\";")) {
+				continue;
 			}
 			try {
 				CompilationUnit compilationUnit = (CompilationUnit)parser.createAST(null);
