@@ -130,6 +130,14 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 					parameterToArgumentMap2.put("this.", "");
 				}
 			}
+			if(classDiff != null) {
+				for(UMLAttribute attribute : classDiff.getOriginalClass().getAttributes()) {
+					if(UMLModelDiff.looksLikeSameType(attribute.getType().getClassType(), operation2.getClassName())) {
+						parameterToArgumentMap1.put(attribute.getName() + ".", "");
+						parameterToArgumentMap2.put("this.", "");
+					}
+				}
+			}
 			resetNodes(leaves1);
 			//replace parameters with arguments in leaves1
 			if(!parameterToArgumentMap1.isEmpty()) {
@@ -3646,6 +3654,10 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 								replacementFound = true;
 								break;
 							}
+							if(element.equals("!" + r.getAfter())) {
+								replacementFound = true;
+								break;
+							}
 							if(r.getType().equals(ReplacementType.INFIX_OPERATOR) && element.contains(r.getAfter())) {
 								replacementFound = true;
 								break;
@@ -4273,10 +4285,23 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 				}
 			}
 			int max = Math.max(leaveSize1, leaveSize2);
-			if(max == 0)
+			if(max == 0) {
 				return 0;
-			else
-				return (double)mappedLeavesSize/(double)max;
+			}
+			else {
+				if(mappedLeavesSize > 0) {
+					return (double)mappedLeavesSize/(double)max;
+				}
+				if(comp1.getString().equals(comp2.getString()) &&
+						!comp1.getLocationInfo().getCodeElementType().equals(CodeElementType.BLOCK) &&
+						!comp1.getLocationInfo().getCodeElementType().equals(CodeElementType.FINALLY_BLOCK) &&
+						!comp1.getLocationInfo().getCodeElementType().equals(CodeElementType.SYNCHRONIZED_STATEMENT) &&
+						!comp1.getLocationInfo().getCodeElementType().equals(CodeElementType.TRY_STATEMENT) &&
+						!comp1.getLocationInfo().getCodeElementType().equals(CodeElementType.CATCH_CLAUSE) &&
+						!parentMapperContainsExactMapping(comp1)) {
+					return 1;
+				}
+			}
 		}
 		
 		int max = Math.max(childrenSize1, childrenSize2);
@@ -4284,6 +4309,21 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 			return 0;
 		else
 			return (double)mappedChildrenSize/(double)max;
+	}
+
+	private boolean parentMapperContainsExactMapping(AbstractStatement statement) {
+		if(parentMapper != null) {
+			for(AbstractCodeMapping mapping : parentMapper.mappings) {
+				AbstractCodeFragment fragment1 = mapping.getFragment1();
+				AbstractCodeFragment fragment2 = mapping.getFragment2();
+				if(fragment1.equals(statement) || fragment2.equals(statement)) {
+					if(fragment1.getString().equals(fragment2.getString())) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
 	}
 
 	private double compositeChildMatchingScore(TryStatementObject try1, TryStatementObject try2, Set<AbstractCodeMapping> mappings,
