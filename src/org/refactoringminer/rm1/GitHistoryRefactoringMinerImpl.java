@@ -36,7 +36,6 @@ import java.util.regex.Matcher;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import gr.uom.java.xmi.diff.UMLModelDiff;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jgit.errors.MissingObjectException;
@@ -138,7 +137,7 @@ public class GitHistoryRefactoringMinerImpl implements GitHistoryRefactoringMine
 		try (RevWalk walk = new RevWalk(repository)) {
 			// If no java files changed, there is no refactoring. Also, if there are
 			// only ADD's or only REMOVE's there is no refactoring
-			if (!filePathsBefore.isEmpty() && !filePathsCurrent.isEmpty() && rightSideCommit.getParentCount() > 0) {
+//			if (!filePathsBefore.isEmpty() && !filePathsCurrent.isEmpty() && rightSideCommit.getParentCount() > 0) {
 				populateFileContents(repository, leftSideCommit, filePathsBefore, fileContentsBefore, repositoryDirectoriesBefore);
 				UMLModel leftSideUMLModel = createModel(fileContentsBefore, repositoryDirectoriesBefore);
 
@@ -149,12 +148,13 @@ public class GitHistoryRefactoringMinerImpl implements GitHistoryRefactoringMine
 				refactoringsAtRevision = modelDiff.getRefactorings();
 				refactoringsAtRevision = filter(refactoringsAtRevision);
 
-				handler.handleExtraInfo(commitId, modelDiff);
-			} else {
+
+//			} else {
 				//logger.info(String.format("Ignored revision %s with no changes in java files", commitId));
-				refactoringsAtRevision = Collections.emptyList();
-			}
+//				refactoringsAtRevision = Collections.emptyList();
+//			}
 			handler.handle(commitId, refactoringsAtRevision);
+			handler.handleExtraInfo(commitId, modelDiff);
 			walk.dispose();
 		}
 		return refactoringsAtRevision;
@@ -213,6 +213,7 @@ public class GitHistoryRefactoringMinerImpl implements GitHistoryRefactoringMine
 				UMLModelDiff modelDiff = parentUMLModel.diff(currentUMLModel, renamedFilesHint);
 				refactoringsAtRevision = modelDiff.getRefactorings();
 				refactoringsAtRevision = filter(refactoringsAtRevision);
+				handler.handleExtraInfo(currentCommitId, modelDiff);
 			}
 			else {
 				logger.warn(String.format("Folder %s not found", currentFolder.getPath()));
@@ -566,6 +567,7 @@ public class GitHistoryRefactoringMinerImpl implements GitHistoryRefactoringMine
 			UMLModelDiff modelDiff = parentUMLModel.diff(currentUMLModel, renamedFilesHint);
 			refactoringsAtRevision = modelDiff.getRefactorings();
 			refactoringsAtRevision = filter(refactoringsAtRevision);
+			handler.handleExtraInfo(currentCommitId, modelDiff);
 		}
 		catch(RefactoringMinerTimedOutException e) {
 			logger.warn(String.format("Ignored revision %s due to timeout", currentCommitId), e);
@@ -584,7 +586,9 @@ public class GitHistoryRefactoringMinerImpl implements GitHistoryRefactoringMine
 			Map<String, String> filesBefore, Map<String, String> filesCurrent, Map<String, String> renamedFilesHint,
 			Set<String> repositoryDirectoriesBefore, Set<String> repositoryDirectoriesCurrent) throws IOException, InterruptedException {
 		logger.info("Processing {} {} ...", cloneURL, currentCommitId);
-		GHRepository repository = getGhRepository(cloneURL);
+		GitHub gitHub = connectToGitHub();
+		String repoName = extractRepositoryName(cloneURL);
+		GHRepository repository = gitHub.getRepository(repoName);
 		GHCommit currentCommit = repository.getCommit(currentCommitId);
 		final String parentCommitId = currentCommit.getParents().get(0).getSHA1();
 		Set<String> deletedAndRenamedFileParentDirectories = ConcurrentHashMap.newKeySet();
@@ -734,18 +738,14 @@ public class GitHistoryRefactoringMinerImpl implements GitHistoryRefactoringMine
 
 	@Override
 	public void detectAtPullRequest(String cloneURL, int pullRequestId, RefactoringHandler handler, int timeout) throws IOException {
-		GHRepository repository = getGhRepository(cloneURL);
+		GitHub gitHub = connectToGitHub();
+		String repoName = extractRepositoryName(cloneURL);
+		GHRepository repository = gitHub.getRepository(repoName);
 		GHPullRequest pullRequest = repository.getPullRequest(pullRequestId);
 		PagedIterable<GHPullRequestCommitDetail> commits = pullRequest.listCommits();
 		for(GHPullRequestCommitDetail commit : commits) {
 			detectAtCommit(cloneURL, commit.getSha(), handler, timeout);
 		}
-	}
-
-	public GHRepository getGhRepository(String cloneURL) throws IOException {
-		GitHub gitHub = connectToGitHub();
-		String repoName = extractRepositoryName(cloneURL);
-		return gitHub.getRepository(repoName);
 	}
 
 	private static final String GITHUB_URL = "https://github.com/";
