@@ -555,6 +555,9 @@ public class CompositeStatementObject extends AbstractStatement {
 		for (AbstractStatement statement : statementList) {
 			stringRepresentation.addAll(statement.stringRepresentation());
 		}
+		if(getLocationInfo().getCodeElementType().equals(CodeElementType.BLOCK)) {
+			stringRepresentation.add("}");
+		}
 		return stringRepresentation;
 	}
 
