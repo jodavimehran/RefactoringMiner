@@ -28,6 +28,7 @@ import gr.uom.java.xmi.diff.ExtractVariableRefactoring;
 import gr.uom.java.xmi.diff.StringDistance;
 import gr.uom.java.xmi.diff.UMLAttributeDiff;
 import gr.uom.java.xmi.diff.UMLClassBaseDiff;
+import gr.uom.java.xmi.diff.UMLClassMoveDiff;
 import gr.uom.java.xmi.diff.UMLModelDiff;
 import gr.uom.java.xmi.diff.UMLOperationDiff;
 import gr.uom.java.xmi.diff.UMLParameterDiff;
@@ -316,6 +317,16 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 				if(!returnWithVariableReplacement(mapping) && !nullLiteralReplacements(mapping) && (!mapping.getReplacements().isEmpty() || !mapping.getFragment1().equalFragment(mapping.getFragment2()))) {
 					AbstractCodeFragment fragment = mapping.getFragment1();
 					expandAnonymousAndLambdas(fragment, leaves1, innerNodes1, addedLeaves1, addedInnerNodes1, operationBodyMapper);
+				}
+			}
+			for(UMLOperationBodyMapper childMapper : operationBodyMapper.childMappers) {
+				if(childMapper.getOperation1().getClassName().equals(addedOperation.getClassName()) || classDiff instanceof UMLClassMoveDiff) {
+					for(AbstractCodeMapping mapping : childMapper.getMappings()) {
+						if(!returnWithVariableReplacement(mapping) && !nullLiteralReplacements(mapping) && (!mapping.getReplacements().isEmpty() || !mapping.getFragment1().equalFragment(mapping.getFragment2()))) {
+							AbstractCodeFragment fragment = mapping.getFragment1();
+							expandAnonymousAndLambdas(fragment, leaves1, innerNodes1, addedLeaves1, addedInnerNodes1, childMapper);
+						}
+					}
 				}
 			}
 			List<StatementObject> leaves2 = composite2.getLeaves();
@@ -782,7 +793,7 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 				for(String key : methodInvocationMap.keySet()) {
 					for(OperationInvocation invocation : methodInvocationMap.get(key)) {
 						for(UMLOperation operation : addedOperations) {
-							if(invocation.matchesOperation(operation, operation2.variableTypeMap(), modelDiff)) {
+							if(invocation.matchesOperation(operation, operation2.variableDeclarationMap(), modelDiff)) {
 								nonMappedInnerNodeCount++;
 								break;
 							}
@@ -798,7 +809,7 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 				for(String key : methodInvocationMap.keySet()) {
 					for(OperationInvocation invocation : methodInvocationMap.get(key)) {
 						for(UMLOperation operation : addedOperations) {
-							if(invocation.matchesOperation(operation, operation2.variableTypeMap(), modelDiff)) {
+							if(invocation.matchesOperation(operation, operation2.variableDeclarationMap(), modelDiff)) {
 								nonMappedLeafCount++;
 								break;
 							}
@@ -818,7 +829,7 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 				for(String key : methodInvocationMap.keySet()) {
 					for(OperationInvocation invocation : methodInvocationMap.get(key)) {
 						for(UMLOperation operation : removedOperations) {
-							if(invocation.matchesOperation(operation, operation1.variableTypeMap(), modelDiff)) {
+							if(invocation.matchesOperation(operation, operation1.variableDeclarationMap(), modelDiff)) {
 								nonMappedInnerNodeCount++;
 								break;
 							}
@@ -834,7 +845,7 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 				for(String key : methodInvocationMap.keySet()) {
 					for(OperationInvocation invocation : methodInvocationMap.get(key)) {
 						for(UMLOperation operation : removedOperations) {
-							if(invocation.matchesOperation(operation, operation1.variableTypeMap(), modelDiff)) {
+							if(invocation.matchesOperation(operation, operation1.variableDeclarationMap(), modelDiff)) {
 								nonMappedLeafCount++;
 								break;
 							}
@@ -850,7 +861,7 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 		boolean removedOperationCalled = false;
 		for(OperationInvocation invocation : operation1.getAllOperationInvocations()) {
 			for(UMLOperation operation : removedOperations) {
-				if(invocation.matchesOperation(operation, operation1.variableTypeMap(), modelDiff)) {
+				if(invocation.matchesOperation(operation, operation1.variableDeclarationMap(), modelDiff)) {
 					removedOperationCalled = true;
 					break;
 				}
@@ -861,7 +872,7 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 		boolean addedOperationCalled = false;
 		for(OperationInvocation invocation : operation2.getAllOperationInvocations()) {
 			for(UMLOperation operation : addedOperations) {
-				if(invocation.matchesOperation(operation, operation2.variableTypeMap(), modelDiff)) {
+				if(invocation.matchesOperation(operation, operation2.variableDeclarationMap(), modelDiff)) {
 					addedOperationCalled = true;
 					break;
 				}
@@ -961,17 +972,33 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 		Set<Replacement> replacements = new LinkedHashSet<Replacement>();
 		for(AbstractCodeMapping mapping : getMappings()) {
 			for(Replacement replacement : mapping.getReplacements()) {
-				if(replacement instanceof MethodInvocationReplacement ||
-						replacement instanceof VariableReplacementWithMethodInvocation ||
-						replacement instanceof ClassInstanceCreationWithMethodInvocationReplacement ||
-						replacement.getType().equals(ReplacementType.ARGUMENT_REPLACED_WITH_RIGHT_HAND_SIDE_OF_ASSIGNMENT_EXPRESSION) ||
-						replacement instanceof IntersectionReplacement ||
-						replacement.getType().equals(ReplacementType.ANONYMOUS_CLASS_DECLARATION)) {
+				if(involvesMethodInvocation(replacement)) {
 					replacements.add(replacement);
 				}
 			}
 		}
+		if(replacements.isEmpty()) {
+			for(UMLOperationBodyMapper childMapper : childMappers) {
+				for(AbstractCodeMapping mapping : childMapper.getMappings()) {
+					for(Replacement replacement : mapping.getReplacements()) {
+						if(involvesMethodInvocation(replacement)) {
+							replacements.add(replacement);
+						}
+					}
+				}
+			}
+		}
 		return replacements;
+	}
+
+	private boolean involvesMethodInvocation(Replacement replacement) {
+		return replacement instanceof MethodInvocationReplacement ||
+				replacement instanceof VariableReplacementWithMethodInvocation ||
+				replacement instanceof ClassInstanceCreationWithMethodInvocationReplacement ||
+				replacement.getType().equals(ReplacementType.ARGUMENT_REPLACED_WITH_RIGHT_HAND_SIDE_OF_ASSIGNMENT_EXPRESSION) ||
+				replacement.getType().equals(ReplacementType.ARGUMENT_REPLACED_WITH_RETURN_EXPRESSION) ||
+				replacement instanceof IntersectionReplacement ||
+				replacement.getType().equals(ReplacementType.ANONYMOUS_CLASS_DECLARATION);
 	}
 
 	public Set<MethodInvocationReplacement> getMethodInvocationRenameReplacements() {
@@ -4011,22 +4038,30 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 				}
 			}
 			else {
+				Set<Replacement> conflictingReplacements = conflictingReplacements(globalReplacementMap);
 				Set<String> processedBefores = new LinkedHashSet<String>();
 				for(Set<Replacement> replacements : globalReplacementMap.values()) {
 					for(Replacement replacement : replacements) {
-						if(!processedBefores.contains(replacement.getBefore())) {
-							replacementInfo.addReplacement(replacement);
-							replacementInfo.setArgumentizedString1(ReplacementUtil.performReplacement(replacementInfo.getArgumentizedString1(), replacementInfo.getArgumentizedString2(), replacement.getBefore(), replacement.getAfter()));
-							processedBefores.add(replacement.getBefore());
-						}
-						else {
-							//find the next best match for replacement.getAfter() from the replacement cache
-							for(Set<Replacement> replacements2 : replacementCache.values()) {
-								for(Replacement replacement2 : replacements2) {
-									if(replacement2.getAfter().equals(replacement.getAfter()) && !replacement2.equals(replacement)) {
-										replacementInfo.addReplacement(replacement2);
-										replacementInfo.setArgumentizedString1(ReplacementUtil.performReplacement(replacementInfo.getArgumentizedString1(), replacementInfo.getArgumentizedString2(), replacement2.getBefore(), replacement2.getAfter()));
-										processedBefores.add(replacement2.getBefore());
+						if(!conflictingReplacements.contains(replacement)) {
+							if(!processedBefores.contains(replacement.getBefore())) {
+								replacementInfo.addReplacement(replacement);
+								replacementInfo.setArgumentizedString1(ReplacementUtil.performReplacement(replacementInfo.getArgumentizedString1(), replacementInfo.getArgumentizedString2(), replacement.getBefore(), replacement.getAfter()));
+								processedBefores.add(replacement.getBefore());
+							}
+							else {
+								//find the next best match for replacement.getAfter() from the replacement cache
+								for(Set<Replacement> replacements2 : replacementCache.values()) {
+									boolean found = false;
+									for(Replacement replacement2 : replacements2) {
+										if(replacement2.getAfter().equals(replacement.getAfter()) && !replacement2.equals(replacement)) {
+											replacementInfo.addReplacement(replacement2);
+											replacementInfo.setArgumentizedString1(ReplacementUtil.performReplacement(replacementInfo.getArgumentizedString1(), replacementInfo.getArgumentizedString2(), replacement2.getBefore(), replacement2.getAfter()));
+											processedBefores.add(replacement2.getBefore());
+											found = true;
+											break;
+										}
+									}
+									if(found) {
 										break;
 									}
 								}
@@ -4036,6 +4071,31 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 				}
 			}
 		}
+	}
+
+	private Set<Replacement> conflictingReplacements(TreeMap<Double, Set<Replacement>> globalReplacementMap) {
+		Map<String, Set<Replacement>> map = new LinkedHashMap<String, Set<Replacement>>();
+		for(Set<Replacement> replacements : globalReplacementMap.values()) {
+			for(Replacement replacement : replacements) {
+				String after = replacement.getAfter();
+				if(map.containsKey(after)) {
+					map.get(after).add(replacement);
+				}
+				else {
+					Set<Replacement> set = new LinkedHashSet<Replacement>();
+					set.add(replacement);
+					map.put(after, set);
+				}
+			}
+		}
+		Set<Replacement> conflictingReplacements = new LinkedHashSet<Replacement>();
+		for(String key : map.keySet()) {
+			Set<Replacement> replacements = map.get(key);
+			if(replacements.size() > 1) {
+				conflictingReplacements.add(replacements.iterator().next());
+			}
+		}
+		return conflictingReplacements;
 	}
 
 	private Replacement variableReplacementWithinMethodInvocations(String s1, String s2, Set<String> variables1, Set<String> variables2) {
@@ -4282,7 +4342,7 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 				if(leaveSize2 <= 2) {
 					for(StatementObject leaf2 : leaves2) {
 						OperationInvocation invocation = leaf2.invocationCoveringEntireFragment();
-						if(invocation != null && matchesOperation(invocation, addedOperations, operation2.variableTypeMap())) {
+						if(invocation != null && matchesOperation(invocation, addedOperations, operation2.variableDeclarationMap())) {
 							mappedLeavesSize++;
 						}
 					}
@@ -4290,7 +4350,7 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 				else if(leaveSize1 <= 2) {
 					for(StatementObject leaf1 : leaves1) {
 						OperationInvocation invocation = leaf1.invocationCoveringEntireFragment();
-						if(invocation != null && matchesOperation(invocation, removedOperations, operation1.variableTypeMap())) {
+						if(invocation != null && matchesOperation(invocation, removedOperations, operation1.variableDeclarationMap())) {
 							mappedLeavesSize++;
 						}
 					}
@@ -4363,10 +4423,9 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 		return score;
 	}
 
-
-	private boolean matchesOperation(OperationInvocation invocation, List<UMLOperation> operations, Map<String, UMLType> variableTypeMap) {
-		for (UMLOperation operation : operations) {
-			if (invocation.matchesOperation(operation, variableTypeMap, modelDiff))
+	private boolean matchesOperation(OperationInvocation invocation, List<UMLOperation> operations, Map<String, Set<VariableDeclaration>> variableDeclarationMap) {
+		for(UMLOperation operation : operations) {
+			if(invocation.matchesOperation(operation, variableDeclarationMap, modelDiff))
 				return true;
 		}
 		return false;

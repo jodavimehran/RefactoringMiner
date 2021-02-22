@@ -40,6 +40,7 @@ public class UMLOperation implements Comparable<UMLOperation>, Serializable, Loc
 	private UMLJavadoc javadoc;
 	private List<UMLAnnotation> annotations;
 	private List<UMLComment> comments;
+	private Map<String, Set<VariableDeclaration>> variableDeclarationMap;
 	
 	public UMLOperation(String name, LocationInfo locationInfo) {
 		this.locationInfo = locationInfo;
@@ -213,16 +214,21 @@ public class UMLOperation implements Comparable<UMLOperation>, Serializable, Loc
 		return null;
 	}
 
-	public Map<String, UMLType> variableTypeMap() {
-		Map<String, UMLType> variableTypeMap = new LinkedHashMap<String, UMLType>();
-		for(UMLParameter parameter : parameters) {
-			if(!parameter.getKind().equals("return"))
-				variableTypeMap.put(parameter.getName(), parameter.getType());
+	public Map<String, Set<VariableDeclaration>> variableDeclarationMap() {
+		if(this.variableDeclarationMap == null) {
+			this.variableDeclarationMap = new LinkedHashMap<String, Set<VariableDeclaration>>();
+			for(VariableDeclaration declaration : getAllVariableDeclarations()) {
+				if(variableDeclarationMap.containsKey(declaration.getVariableName())) {
+					variableDeclarationMap.get(declaration.getVariableName()).add(declaration);
+				}
+				else {
+					Set<VariableDeclaration> variableDeclarations = new LinkedHashSet<VariableDeclaration>();
+					variableDeclarations.add(declaration);
+					variableDeclarationMap.put(declaration.getVariableName(), variableDeclarations);
+				}
+			}
 		}
-		for(VariableDeclaration declaration : getAllVariableDeclarations()) {
-			variableTypeMap.put(declaration.getVariableName(), declaration.getType());
-		}
-		return variableTypeMap;
+		return variableDeclarationMap;
 	}
 
 	public int statementCount() {
@@ -306,6 +312,11 @@ public class UMLOperation implements Comparable<UMLOperation>, Serializable, Loc
 			return true;
 		else
 			return false;
+	}
+
+	public boolean equalSignatureForAbstractMethods(UMLOperation operation) {
+		return this.getBody() == null && operation.getBody() == null && this.name.equals(operation.name) &&
+				equalTypeParameters(operation) && equalReturnParameter(operation) && this.getParameterTypeList().equals(operation.getParameterTypeList());
 	}
 
 	public boolean equalSignature(UMLOperation operation) {
@@ -495,7 +506,7 @@ public class UMLOperation implements Comparable<UMLOperation>, Serializable, Loc
 				for(String key : operationInvocationMap.keySet()) {
 					List<OperationInvocation> operationInvocations = operationInvocationMap.get(key);
 					for(OperationInvocation operationInvocation : operationInvocations) {
-						if(operationInvocation.matchesOperation(this, this.variableTypeMap(), null) || operationInvocation.getMethodName().equals(this.getName())) {
+						if(operationInvocation.matchesOperation(this, this.variableDeclarationMap(), null) || operationInvocation.getMethodName().equals(this.getName())) {
 							return operationInvocation;
 						}
 					}

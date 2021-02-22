@@ -148,10 +148,10 @@ public class OperationInvocation extends AbstractCall {
     }
 
     public boolean matchesOperation(UMLOperation operation) {
-    	return matchesOperation(operation, new HashMap<String, UMLType>(), null);
+    	return matchesOperation(operation, new HashMap<String, Set<VariableDeclaration>>(), null);
     }
 
-    public boolean matchesOperation(UMLOperation operation, Map<String, UMLType> variableTypeMap, UMLModelDiff modelDiff) {
+    public boolean matchesOperation(UMLOperation operation, Map<String, Set<VariableDeclaration>> variableDeclarationMap, UMLModelDiff modelDiff) {
     	List<UMLType> inferredArgumentTypes = new ArrayList<UMLType>();
     	for(String arg : arguments) {
     		int indexOfOpeningParenthesis = arg.indexOf("(");
@@ -172,8 +172,14 @@ public class OperationInvocation extends AbstractCall {
     		else if(indexOfOpeningParenthesis == -1 && indexOfOpeningSquareBracket != -1) {
     			openingSquareBracketBeforeParenthesis = true;
     		}
-    		if(variableTypeMap.containsKey(arg)) {
-    			inferredArgumentTypes.add(variableTypeMap.get(arg));
+    		if(variableDeclarationMap.containsKey(arg)) {
+    			Set<VariableDeclaration> variableDeclarations = variableDeclarationMap.get(arg);
+    			for(VariableDeclaration variableDeclaration : variableDeclarations) {
+    				if(variableDeclaration.getScope().subsumes(this.getLocationInfo())) {
+    					inferredArgumentTypes.add(variableDeclaration.getType());
+    					break;
+    				}
+    			}
     		}
     		else if(arg.startsWith("\"") && arg.endsWith("\"")) {
     			inferredArgumentTypes.add(UMLType.extractTypeObject("String"));
