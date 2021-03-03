@@ -1014,6 +1014,10 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 		return replacements;
 	}
 
+	public boolean involvesTestMethods() {
+		return operation1.hasTestAnnotation() && operation2.hasTestAnnotation();
+	}
+
 	public void processInnerNodes(List<CompositeStatementObject> innerNodes1, List<CompositeStatementObject> innerNodes2,
 			Map<String, String> parameterToArgumentMap) throws RefactoringMinerTimedOutException {
 		List<UMLOperation> removedOperations = classDiff != null ? classDiff.getRemovedOperations() : new ArrayList<UMLOperation>();
@@ -2243,6 +2247,14 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 						invocationCoveringTheEntireStatement1.getExpression().contains(".") == invocationCoveringTheEntireStatement2.getExpression().contains(".")) {
 					return replacementInfo.getReplacements();
 				}
+			}
+			String expression1 = invocationCoveringTheEntireStatement1.getExpression();
+			String expression2 = invocationCoveringTheEntireStatement2.getExpression();
+			boolean staticVSNonStatic = (expression1 == null && expression2 != null && operation1.getClassName().endsWith("." + expression2)) ||
+					(expression1 != null && expression2 == null && operation2.getClassName().endsWith("." + expression1));
+			if(invocationCoveringTheEntireStatement1.identicalName(invocationCoveringTheEntireStatement2) && staticVSNonStatic &&
+					invocationCoveringTheEntireStatement1.identicalOrReplacedArguments(invocationCoveringTheEntireStatement2, replacementInfo.getReplacements(), lambdaMappers)) {
+				return replacementInfo.getReplacements();
 			}
 		}
 		//method invocation is identical if arguments are replaced
@@ -3642,8 +3654,8 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 	private boolean commonConcat(String s1, String s2, ReplacementInfo info) {
 		if(s1.contains("+") && s2.contains("+") && !s1.contains("++") && !s2.contains("++") &&
 				!containsMethodSignatureOfAnonymousClass(s1) && !containsMethodSignatureOfAnonymousClass(s2)) {
-			Set<String> tokens1 = new LinkedHashSet<String>(Arrays.asList(s1.split(SPLIT_CONCAT_STRING_PATTERN)));
-			Set<String> tokens2 = new LinkedHashSet<String>(Arrays.asList(s2.split(SPLIT_CONCAT_STRING_PATTERN)));
+			Set<String> tokens1 = new LinkedHashSet<String>(Arrays.asList(SPLIT_CONCAT_STRING_PATTERN.split(s1)));
+			Set<String> tokens2 = new LinkedHashSet<String>(Arrays.asList(SPLIT_CONCAT_STRING_PATTERN.split(s2)));
 			Set<String> intersection = new LinkedHashSet<String>(tokens1);
 			intersection.retainAll(tokens2);
 			Set<String> filteredIntersection = new LinkedHashSet<String>();
@@ -4248,15 +4260,22 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 				return -Integer.compare(thisExactMatches, otherExactMatches);
 			}
 			else {
-				int thisEditDistance = this.editDistance();
-				int otherEditDistance = operationBodyMapper.editDistance();
-				if(thisEditDistance != otherEditDistance) {
-					return Integer.compare(thisEditDistance, otherEditDistance);
+				int thisNonMapped = this.nonMappedElementsT2();
+				int otherNonMapped = operationBodyMapper.nonMappedElementsT2();
+				if(thisNonMapped != otherNonMapped) {
+					return Integer.compare(thisNonMapped, otherNonMapped);
 				}
 				else {
-					int thisOperationNameEditDistance = this.operationNameEditDistance();
-					int otherOperationNameEditDistance = operationBodyMapper.operationNameEditDistance();
-					return Integer.compare(thisOperationNameEditDistance, otherOperationNameEditDistance);
+					int thisEditDistance = this.editDistance();
+					int otherEditDistance = operationBodyMapper.editDistance();
+					if(thisEditDistance != otherEditDistance) {
+						return Integer.compare(thisEditDistance, otherEditDistance);
+					}
+					else {
+						int thisOperationNameEditDistance = this.operationNameEditDistance();
+						int otherOperationNameEditDistance = operationBodyMapper.operationNameEditDistance();
+						return Integer.compare(thisOperationNameEditDistance, otherOperationNameEditDistance);
+					}
 				}
 			}
 		}
