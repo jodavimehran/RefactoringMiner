@@ -44,11 +44,21 @@ public class OperationBody {
 
 	private CompositeStatementObject compositeStatement;
 	private List<String> stringRepresentation;
+	private boolean containsAssertion;
 
-    public OperationBody(CompilationUnit cu, String filePath, Block methodBody) {
-        this.compositeStatement = new CompositeStatementObject(cu, filePath, methodBody, 0, CodeElementType.BLOCK);
-        methodBody.statements().stream().forEach(statement -> processStatement(cu, filePath, compositeStatement, (Statement) statement));
-    }
+	public OperationBody(CompilationUnit cu, String filePath, Block methodBody) {
+		this.compositeStatement = new CompositeStatementObject(cu, filePath, methodBody, 0, CodeElementType.BLOCK);
+		List<Statement> statements = methodBody.statements();
+		for(Statement statement : statements) {
+			processStatement(cu, filePath, compositeStatement, statement);
+		}
+		for(OperationInvocation invocation : getAllOperationInvocations()) {
+			if(invocation.getName().startsWith("assert")) {
+				containsAssertion = true;
+				break;
+			}
+		}
+	}
 
     public int statementCount() {
         return compositeStatement.statementCount();
@@ -58,9 +68,13 @@ public class OperationBody {
         return compositeStatement;
     }
 
-    public List<AnonymousClassDeclarationObject> getAllAnonymousClassDeclarations() {
-        return new ArrayList<>(compositeStatement.getAllAnonymousClassDeclarations());
-    }
+	public boolean containsAssertion() {
+		return containsAssertion;
+	}
+
+	public List<AnonymousClassDeclarationObject> getAllAnonymousClassDeclarations() {
+		return new ArrayList<AnonymousClassDeclarationObject>(compositeStatement.getAllAnonymousClassDeclarations());
+	}
 
     public List<OperationInvocation> getAllOperationInvocations() {
         return compositeStatement.getAllMethodInvocations().values().stream().flatMap(Collection::stream).collect(Collectors.toList());
