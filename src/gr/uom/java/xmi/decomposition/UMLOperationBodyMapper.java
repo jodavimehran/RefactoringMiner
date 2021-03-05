@@ -55,9 +55,9 @@ import org.refactoringminer.api.RefactoringMinerTimedOutException;
 import org.refactoringminer.util.PrefixSuffixUtils;
 
 public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper> {
-	public static final String SPLIT_CONCAT_STRING_PATTERN = "(\\s)*(\\+)(\\s)*";
 	private static final Pattern SPLIT_CONDITIONAL_PATTERN = Pattern.compile("(\\|\\|)|(&&)|(\\?)|(:)");
-	private static final Pattern DOUBLE_QUOTES = Pattern.compile("\"([^\"]*)\"|(\\S+)");
+	public static final Pattern SPLIT_CONCAT_STRING_PATTERN = Pattern.compile("(\\s)*(\\+)(\\s)*");
+	private static final int MAXIMUM_NUMBER_OF_COMPARED_STRINGS = 100;
 
 	private final UMLOperation operation1;
 	private final UMLOperation operation2;
@@ -3940,6 +3940,9 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 	}
 
 	private void findReplacements(Set<String> strings1, Set<String> strings2, ReplacementInfo replacementInfo, ReplacementType type) throws RefactoringMinerTimedOutException {
+		if(strings1.size() > MAXIMUM_NUMBER_OF_COMPARED_STRINGS || strings2.size() > MAXIMUM_NUMBER_OF_COMPARED_STRINGS) {
+			return;
+		}
 		TreeMap<Double, Set<Replacement>> globalReplacementMap = new TreeMap<Double, Set<Replacement>>();
 		TreeMap<Double, Set<Replacement>> replacementCache = new TreeMap<Double, Set<Replacement>>();
 		if(strings1.size() <= strings2.size()) {
