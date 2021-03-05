@@ -131,34 +131,33 @@ public class GitHistoryRefactoringMinerImpl implements GitHistoryRefactoringMine
 		Map<String, String> renamedFilesHint = new HashMap<String, String>();
 		gitService.fileTreeDiff(repository, leftSideCommit, rightSideCommit, filePathsBefore, filePathsCurrent, renamedFilesHint);
 
-		Set<String> repositoryDirectoriesBefore = new LinkedHashSet<String>();
-		Set<String> repositoryDirectoriesCurrent = new LinkedHashSet<String>();
-		Map<String, String> fileContentsBefore = new LinkedHashMap<String, String>();
-		Map<String, String> fileContentsCurrent = new LinkedHashMap<String, String>();
 		try (RevWalk walk = new RevWalk(repository)) {
 			// If no java files changed, there is no refactoring. Also, if there are
 			// only ADD's or only REMOVE's there is no refactoring
-//			if (!filePathsBefore.isEmpty() && !filePathsCurrent.isEmpty() && rightSideCommit.getParentCount() > 0) {
-				populateFileContents(repository, leftSideCommit, filePathsBefore, fileContentsBefore, repositoryDirectoriesBefore);
-				UMLModel leftSideUMLModel = createModel(fileContentsBefore, repositoryDirectoriesBefore);
-
-				populateFileContents(repository, rightSideCommit, filePathsCurrent, fileContentsCurrent, repositoryDirectoriesCurrent);
-				UMLModel rightSideUMLModel = createModel(fileContentsCurrent, repositoryDirectoriesCurrent);
+			if (rightSideCommit.getParentCount() > 0) {
+				UMLModel leftSideUMLModel = getUmlModel(repository, leftSideCommit, filePathsBefore);
+				UMLModel rightSideUMLModel = getUmlModel(repository, rightSideCommit, filePathsCurrent);
 
 				UMLModelDiff modelDiff = leftSideUMLModel.diff(rightSideUMLModel, renamedFilesHint);
 				refactoringsAtRevision = modelDiff.getRefactorings();
 				refactoringsAtRevision = filter(refactoringsAtRevision);
 
-
-//			} else {
-				//logger.info(String.format("Ignored revision %s with no changes in java files", commitId));
-//				refactoringsAtRevision = Collections.emptyList();
-//			}
+				handler.handleExtraInfo(commitId, modelDiff);
+			} else {
+				logger.info(String.format("Ignored revision %s with no changes in java files", commitId));
+				refactoringsAtRevision = Collections.emptyList();
+			}
 			handler.handle(commitId, refactoringsAtRevision);
-			handler.handleExtraInfo(commitId, modelDiff);
 			walk.dispose();
 		}
 		return refactoringsAtRevision;
+	}
+
+	private UMLModel getUmlModel(Repository repository, RevCommit commit, List<String> filePaths) throws Exception {
+		Set<String> repositoryDirectories = new LinkedHashSet<>();
+		Map<String, String> fileContents = new LinkedHashMap<>();
+		populateFileContents(repository, commit, filePaths, fileContents, repositoryDirectories);
+		return createModel(fileContents, repositoryDirectories);
 	}
 
 	private void populateFileContents(Repository repository, RevCommit commit,
