@@ -6,6 +6,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Objects;
 import java.util.Set;
 
 public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, Serializable, LocationInfoProvider {
@@ -312,4 +313,34 @@ public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, 
 	public boolean isSingleAbstractMethodInterface() {
 		return isInterface && operations.size() == 1;
 	}
+
+    private String getSourceFolder(String packageName, String name, boolean topLevel) {
+        String sourceFolder;
+        if (packageName.equals("")) {
+            int index = sourceFile.indexOf(name);
+            sourceFolder = getSourceFolder(index);
+        } else {
+            if (topLevel) {
+                int index = sourceFile.indexOf(packageName.replace('.', '/'));
+                sourceFolder = getSourceFolder(index);
+            } else {
+                int index;
+                if (packageName.contains(".")) {
+                    String realPackageName = packageName.substring(0, packageName.lastIndexOf('.'));
+                    index = sourceFile.indexOf(realPackageName.replace('.', '/'));
+                } else {
+                    index = sourceFile.indexOf(packageName);
+                }
+                sourceFolder = getSourceFolder(index);
+            }
+        }
+        return sourceFolder;
+    }
+
+    private String getSourceFolder(int index) {
+        if (index != -1) {
+            return sourceFile.substring(0, index);
+        }
+        return "";
+    }
 }
