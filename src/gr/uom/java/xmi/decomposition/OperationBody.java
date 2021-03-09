@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -39,11 +40,13 @@ import org.eclipse.jdt.core.dom.ThrowStatement;
 import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.WhileStatement;
+import org.refactoringminer.utils.Hashing;
 
 public class OperationBody {
 
-	private CompositeStatementObject compositeStatement;
-	private List<String> stringRepresentation;
+	private final CompositeStatementObject compositeStatement;
+	private final String sha512;
+    private List<String> stringRepresentation;
 	private boolean containsAssertion;
 
 	public OperationBody(CompilationUnit cu, String filePath, Block methodBody) {
@@ -58,7 +61,9 @@ public class OperationBody {
 				break;
 			}
 		}
+        sha512 = Hashing.getSHA512(stringRepresentation().stream().collect(Collectors.joining()));
 	}
+        
 
     public int statementCount() {
         return compositeStatement.statementCount();
@@ -297,4 +302,21 @@ public class OperationBody {
 		}
 		return stringRepresentation;
 	}
+
+    public String getSha512() {
+        return sha512;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        OperationBody that = (OperationBody) o;
+        return sha512.equals(that.sha512);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(sha512);
+    }
 }

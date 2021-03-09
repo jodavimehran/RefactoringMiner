@@ -4470,17 +4470,16 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 		return changedVariable;
 	}
 
-	private boolean checkSimilarity(){
-		List<String> body1 = operation1.getBody().stringRepresentation();
-		List<String> body2 = operation2.getBody().stringRepresentation();
+	private boolean checkSimilarity() {
+		OperationBody body1 = operation1.getBody();
+		OperationBody body2 = operation2.getBody();
 
 		if (body1 == null && body2 == null) return true;
 
-		if ((body1 == null && body2!= null) || (body1 != null && body2== null) || (body1.size() != body2.size()))
-		{
+		if ((body1 == null && body2 != null) || (body1 != null && body2 == null)) {
 			return false;
 		}
-		return body1.equals(body2);
+		return body1.getSha512().equals(body2.getSha512());
 	}
 
 	public boolean notSame() {
