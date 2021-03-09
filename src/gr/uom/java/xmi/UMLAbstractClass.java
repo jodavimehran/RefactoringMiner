@@ -1,9 +1,11 @@
 package gr.uom.java.xmi;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Set;
 
 import org.refactoringminer.util.PrefixSuffixUtils;
@@ -20,6 +22,7 @@ public abstract class UMLAbstractClass {
 	protected final List<UMLOperation> operations = new ArrayList<>();
 	protected final List<UMLAttribute> attributes = new ArrayList<>();
 	protected final List<UMLComment> comments = new ArrayList<>();
+	private final List<UMLAnonymousClass> anonymousClassList  = new ArrayList<>();
 
 	public UMLAbstractClass(LocationInfo locationInfo, String packageName, String name) {
         this.locationInfo = locationInfo;
@@ -29,6 +32,10 @@ public abstract class UMLAbstractClass {
 
 	public LocationInfo getLocationInfo() {
 		return locationInfo;
+	}
+
+	public String getPackageName() {
+		return this.packageName;
 	}
 
 	public void addOperation(UMLOperation operation) {
@@ -49,6 +56,13 @@ public abstract class UMLAbstractClass {
 
 	public List<UMLComment> getComments() {
 		return comments;
+	}
+
+	//returns true if the "innerClass" parameter is inner class of this
+	public boolean isInnerClass(UMLAbstractClass innerClass) {
+		if(this.getName().equals(innerClass.packageName))
+			return true;
+		return false;
 	}
 
 	public UMLOperation operationWithTheSameSignature(UMLOperation operation) {
@@ -413,5 +427,33 @@ public abstract class UMLAbstractClass {
 
 	public CodeRange codeRange() {
 		return locationInfo.codeRange();
+	}
+
+	public Map<String, Set<String>> aliasedAttributes() {
+		for(UMLOperation operation : getOperations()) {
+			if(operation.isConstructor()) {
+				Map<String, Set<String>> aliased = operation.aliasedAttributes();
+				if(!aliased.isEmpty()) {
+					return aliased;
+				}
+			}
+		}
+		return new LinkedHashMap<String, Set<String>>();
+	}
+
+	public void addAnonymousClass(UMLAnonymousClass anonymousClass) {
+		anonymousClassList.add(anonymousClass);
+	}
+
+	public List<UMLAnonymousClass> getAnonymousClassList() {
+		return anonymousClassList;
+	}
+
+	public boolean containsAnonymousWithSameAttributesAndOperations(UMLAnonymousClass anonymous) {
+		for(UMLAnonymousClass thisAnonymous : anonymousClassList) {
+			if(thisAnonymous.hasSameAttributesAndOperations(anonymous))
+				return true;
+		}
+		return false;
 	}
 }

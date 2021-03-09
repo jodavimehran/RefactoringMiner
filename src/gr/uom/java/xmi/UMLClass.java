@@ -4,11 +4,8 @@ import gr.uom.java.xmi.diff.StringDistance;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, Serializable, LocationInfoProvider {
@@ -22,7 +19,6 @@ public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, 
     private final boolean topLevel;
     private final UMLType superclass;
     private final List<UMLType> implementedInterfaces = new ArrayList<>();
-    private final List<UMLAnonymousClass> anonymousClassList = new ArrayList<>();
     private final List<String> importedTypes;
     private final List<UMLTypeParameter> typeParameters = new ArrayList<>();
     private final UMLJavadoc javadoc;
@@ -68,29 +64,16 @@ public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, 
         annotations.add(annotation);
     }
 
-    public void addAnonymousClass(UMLAnonymousClass anonymousClass) {
-        anonymousClassList.add(anonymousClass);
-    }
-
-    public void addEnumConstant(UMLEnumConstant enumConstant) {
-        enumConstants.add(enumConstant);
+	public void addEnumConstant(UMLEnumConstant enumConstant) {
+    	enumConstants.add(enumConstant);
     }
 
     public List<UMLEnumConstant> getEnumConstants() {
         return enumConstants;
     }
 
-    public String getPackageName() {
-        return this.packageName;
-    }
-
     public String getName() {
         return this.qualifiedName;
-    }
-
-    //returns true if the "innerClass" parameter is inner class of this
-    public boolean isInnerClass(UMLClass innerClass) {
-        return this.getName().equals(innerClass.packageName);
     }
 
     public boolean isTopLevel() {
@@ -129,13 +112,9 @@ public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, 
         return importedTypes;
     }
 
-    public List<UMLAnonymousClass> getAnonymousClassList() {
-        return anonymousClassList;
-    }
-
-    public UMLJavadoc getJavadoc() {
-        return javadoc;
-    }
+	public UMLJavadoc getJavadoc() {
+		return javadoc;
+	}
 
     public UMLEnumConstant containsEnumConstant(UMLEnumConstant otherEnumConstant) {
         ListIterator<UMLEnumConstant> enumConstantIt = enumConstants.listIterator();
@@ -330,57 +309,7 @@ public class UMLClass extends UMLAbstractClass implements Comparable<UMLClass>, 
         return false;
     }
 
-    public boolean containsAnonymousWithSameAttributesAndOperations(UMLAnonymousClass anonymous) {
-        for (UMLAnonymousClass thisAnonymous : anonymousClassList) {
-            if (thisAnonymous.hasSameAttributesAndOperations(anonymous))
-                return true;
-        }
-        return false;
-    }
-
-    public boolean isSingleAbstractMethodInterface() {
-        return isInterface && operations.size() == 1;
-    }
-
-    public Map<String, Set<String>> aliasedAttributes() {
-        for (UMLOperation operation : getOperations()) {
-            if (operation.isConstructor()) {
-                Map<String, Set<String>> aliased = operation.aliasedAttributes();
-                if (!aliased.isEmpty()) {
-                    return aliased;
-                }
-            }
-        }
-        return new LinkedHashMap<String, Set<String>>();
-    }
-
-    private String getSourceFolder(String packageName, String name, boolean topLevel) {
-        String sourceFolder;
-        if (packageName.equals("")) {
-            int index = sourceFile.indexOf(name);
-            sourceFolder = getSourceFolder(index);
-        } else {
-            if (topLevel) {
-                int index = sourceFile.indexOf(packageName.replace('.', '/'));
-                sourceFolder = getSourceFolder(index);
-            } else {
-                int index;
-                if (packageName.contains(".")) {
-                    String realPackageName = packageName.substring(0, packageName.lastIndexOf('.'));
-                    index = sourceFile.indexOf(realPackageName.replace('.', '/'));
-                } else {
-                    index = sourceFile.indexOf(packageName);
-                }
-                sourceFolder = getSourceFolder(index);
-            }
-        }
-        return sourceFolder;
-    }
-
-    private String getSourceFolder(int index) {
-        if (index != -1) {
-            return sourceFile.substring(0, index);
-        }
-        return "";
-    }
+	public boolean isSingleAbstractMethodInterface() {
+		return isInterface && operations.size() == 1;
+	}
 }
