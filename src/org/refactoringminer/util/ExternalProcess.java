@@ -8,6 +8,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 
 class ExternalProcess {
+	private ExternalProcess() {
+	}
 
 	public static String execute(File workingDir, String ... commandAndArgs) {
 		try {

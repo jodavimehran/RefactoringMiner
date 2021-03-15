@@ -1,9 +1,11 @@
-package org.refactoringminer.utils;
+package org.refactoringminer.util;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;
 
 public class Hashing {
+    private Hashing() {
+    }
 
     public static String getSHA512(String input){
         String toReturn = null;
