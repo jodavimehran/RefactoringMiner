@@ -19,6 +19,7 @@ public class RenameVariableRefactoring implements Refactoring {
 	private UMLOperation operationBefore;
 	private UMLOperation operationAfter;
 	private Set<AbstractCodeMapping> variableReferences;
+	private boolean extraction;
 
 	public RenameVariableRefactoring(
 			VariableDeclaration originalVariable,
@@ -156,5 +157,13 @@ public class RenameVariableRefactoring implements Refactoring {
 				.setDescription("method declaration with renamed variable")
 				.setCodeElement(operationAfter.toString()));
 		return ranges;
+	}
+
+	public boolean isExtraction() {
+		return extraction;
+	}
+
+	public void setExtraction(boolean extraction) {
+		this.extraction = extraction;
 	}
 }

@@ -40,7 +40,7 @@ import org.eclipse.jdt.core.dom.ThrowStatement;
 import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.WhileStatement;
-import org.refactoringminer.utils.Hashing;
+import org.refactoringminer.util.Hashing;
 
 public class OperationBody {
 

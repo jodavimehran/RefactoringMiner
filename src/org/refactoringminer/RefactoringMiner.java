@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import gr.uom.java.xmi.diff.UMLModelDiff;
 import java.util.List;
 
 import org.eclipse.jgit.lib.Repository;
@@ -216,6 +217,11 @@ public class RefactoringMiner {
 			public void handleException(String commit, Exception e) {
 				System.err.println("Error processing commit " + commit);
 				e.printStackTrace(System.err);
+			}
+
+			@Override
+			public void handleExtraInfo(String commitId, UMLModelDiff umlModelDiff) {
+				super.handleExtraInfo(commitId, umlModelDiff);
 			}
 		}, timeout);
 		endJSON();
