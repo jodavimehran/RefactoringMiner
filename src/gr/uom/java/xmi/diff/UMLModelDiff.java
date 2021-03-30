@@ -362,24 +362,32 @@ public class UMLModelDiff {
          if(umlClass.getName().equals(className))
             return umlClass;
       }
-       return null;
+      return null;
    }
 
-    public UMLClass getRemovedClass(String className) {
-        for (UMLClass umlClass : removedClasses) {
-            if (umlClass.getName().equals(className))
-                return umlClass;
-        }
-        return null;
-    }
+   public UMLClass getRemovedClass(String className) {
+      for(UMLClass umlClass : removedClasses) {
+         if(umlClass.getName().equals(className))
+            return umlClass;
+      }
+      return null;
+   }
 
-    private String isRenamedClass(UMLClass umlClass) {
-        for (UMLClassRenameDiff renameDiff : classRenameDiffList) {
-            if (renameDiff.getOriginalClass().equals(umlClass))
-                return renameDiff.getRenamedClass().getName();
-        }
-        return null;
-    }
+   private String isRenamedClass(UMLClass umlClass) {
+      for(UMLClassRenameDiff renameDiff : classRenameDiffList) {
+         if(renameDiff.getOriginalClass().equals(umlClass))
+            return renameDiff.getRenamedClass().getName();
+      }
+      return null;
+   }
+
+   private String isMovedClass(UMLClass umlClass) {
+      for(UMLClassMoveDiff moveDiff : classMoveDiffList) {
+         if(moveDiff.getOriginalClass().equals(umlClass))
+            return moveDiff.getMovedClass().getName();
+      }
+      return null;
+   }
 
    public void checkForGeneralizationChanges() {
       for(Iterator<UMLGeneralization> removedGeneralizationIterator = removedGeneralizations.iterator(); removedGeneralizationIterator.hasNext();) {
@@ -2662,18 +2670,10 @@ public class UMLModelDiff {
     	  classDiff.getRemovedOperations().remove(operation);
    }
 
-    private String isMovedClass(UMLClass umlClass) {
-      for(UMLClassMoveDiff moveDiff : classMoveDiffList) {
-         if(moveDiff.getOriginalClass().equals(umlClass))
-            return moveDiff.getMovedClass().getName();
-      }
-      return null;
-   }
-
    private void deleteAddedOperation(UMLOperation operation) {
       UMLClassBaseDiff classDiff = getUMLClassDiff(operation.getClassName());
-       if (classDiff != null)
-           classDiff.getAddedOperations().remove(operation);
+      if(classDiff != null)
+    	  classDiff.getAddedOperations().remove(operation);
    }
 
     public List<UMLAttribute> getRemovedAttributes() {
