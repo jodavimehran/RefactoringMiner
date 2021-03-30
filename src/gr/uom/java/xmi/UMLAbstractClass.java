@@ -11,6 +11,7 @@ import java.util.Set;
 import org.refactoringminer.util.PrefixSuffixUtils;
 
 import gr.uom.java.xmi.decomposition.OperationInvocation;
+import gr.uom.java.xmi.decomposition.VariableDeclaration;
 import gr.uom.java.xmi.diff.CodeRange;
 import gr.uom.java.xmi.diff.RenamePattern;
 import gr.uom.java.xmi.diff.StringDistance;
@@ -23,6 +24,7 @@ public abstract class UMLAbstractClass {
 	protected final List<UMLAttribute> attributes = new ArrayList<>();
 	protected final List<UMLComment> comments = new ArrayList<>();
 	private final List<UMLAnonymousClass> anonymousClassList  = new ArrayList<>();
+	private Map<String, VariableDeclaration> fieldDeclarationMap;
 
 	public UMLAbstractClass(LocationInfo locationInfo, String packageName, String name) {
         this.locationInfo = locationInfo;
@@ -56,6 +58,16 @@ public abstract class UMLAbstractClass {
 
 	public List<UMLComment> getComments() {
 		return comments;
+	}
+
+	public Map<String, VariableDeclaration> getFieldDeclarationMap() {
+		if(this.fieldDeclarationMap == null) {
+			fieldDeclarationMap = new LinkedHashMap<String, VariableDeclaration>();
+			for(UMLAttribute attribute : attributes) {
+				fieldDeclarationMap.put(attribute.getName(), attribute.getVariableDeclaration());
+			}
+		}
+		return fieldDeclarationMap;
 	}
 
 	//returns true if the "innerClass" parameter is inner class of this
@@ -316,7 +328,7 @@ public abstract class UMLAbstractClass {
 			if(commonOperations.contains(operation)) {
 				for(OperationInvocation invocation : operation.getAllOperationInvocations()) {
 					for(UMLOperation unmatchedOperation : unmatchedOperations) {
-						if(invocation.matchesOperation(unmatchedOperation, operation.variableDeclarationMap(), null)) {
+						if(invocation.matchesOperation(unmatchedOperation, operation, null)) {
 							unmatchedCalledOperations.add(unmatchedOperation);
 							break;
 						}

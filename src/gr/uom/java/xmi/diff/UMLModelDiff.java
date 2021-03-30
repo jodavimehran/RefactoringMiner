@@ -1,11 +1,13 @@
 package gr.uom.java.xmi.diff;
 
+import gr.uom.java.xmi.UMLAbstractClass;
 import gr.uom.java.xmi.UMLAnnotation;
 import gr.uom.java.xmi.UMLAnonymousClass;
 import gr.uom.java.xmi.UMLAttribute;
 import gr.uom.java.xmi.UMLClass;
 import gr.uom.java.xmi.UMLClassMatcher;
 import gr.uom.java.xmi.UMLGeneralization;
+import gr.uom.java.xmi.UMLModel;
 import gr.uom.java.xmi.UMLOperation;
 import gr.uom.java.xmi.UMLParameter;
 import gr.uom.java.xmi.UMLRealization;
@@ -49,9 +51,11 @@ import org.refactoringminer.util.PrefixSuffixUtils;
 
 public class UMLModelDiff {
    private static final Pattern RETURN_NUMBER_LITERAL = Pattern.compile("return \\d+;\n");
+   private final UMLModel parentModel;
+   private final UMLModel childModel;
    private final List<UMLClass> addedClasses = new ArrayList<>();
    private final List<UMLClass> removedClasses = new ArrayList<>();
-
+   
    private final List<UMLGeneralization> addedGeneralizations = new ArrayList<>();
    private final List<UMLGeneralization> removedGeneralizations = new ArrayList<>();
    private final List<UMLGeneralizationDiff> generalizationDiffList = new ArrayList<>();
@@ -68,6 +72,29 @@ public class UMLModelDiff {
 
    private final Set<Pair<UMLOperation, UMLOperation>> processedOperationPairs = new HashSet<>();
 
+   public UMLModelDiff(UMLModel parentModel, UMLModel childModel) {
+      this.parentModel = parentModel;
+      this.childModel = childModel;
+   }
+
+   public UMLAbstractClass findClassInParentModel(String className) {
+	   for(UMLClass umlClass : parentModel.getClassList()) {
+		   if(umlClass.getName().equals(className)) {
+			   return umlClass;
+		   }
+	   }
+	   return null;
+   }
+
+   public UMLAbstractClass findClassInChildModel(String className) {
+	   for(UMLClass umlClass : childModel.getClassList()) {
+		   if(umlClass.getName().equals(className)) {
+			   return umlClass;
+		   }
+	   }
+	   return null;
+   }
+  
    public void reportAddedClass(UMLClass umlClass) {
 	   if(!addedClasses.contains(umlClass))
 		   this.addedClasses.add(umlClass);
@@ -330,13 +357,6 @@ public class UMLModelDiff {
 	   return null;
    }
 
-    private static boolean isNumeric(String str) {
-        for (char c : str.toCharArray()) {
-            if (!Character.isDigit(c)) return false;
-        }
-        return true;
-    }
-
    public UMLClass getAddedClass(String className) {
       for(UMLClass umlClass : addedClasses) {
          if(umlClass.getName().equals(className))
@@ -351,14 +371,6 @@ public class UMLModelDiff {
                 return umlClass;
         }
         return null;
-    }
-
-    public List<UMLClass> getRemovedClasses() {
-        return new ArrayList<>(removedClasses);
-    }
-
-    public List<UMLClass> getAddedClasses() {
-        return new ArrayList<>(addedClasses);
     }
 
     private String isRenamedClass(UMLClass umlClass) {
@@ -1129,7 +1141,7 @@ public class UMLModelDiff {
 	   for(OperationInvocation newInvocation : newInvocations) {
 		   for(UMLOperation operation : addedClass.getOperations()) {
 			   if(!operation.isAbstract() && !operation.hasEmptyBody() &&
-					   newInvocation.matchesOperation(operation, addedOperation.variableDeclarationMap(), this)) {
+					   newInvocation.matchesOperation(operation, addedOperation, this)) {
 				   ExtractOperationDetection detection = new ExtractOperationDetection(movedMethodMapper, addedClass.getOperations(), getUMLClassDiff(operation.getClassName()), this);
 				   List<ExtractOperationRefactoring> refs = detection.check(operation);
 				   this.refactorings.addAll(refs);
@@ -1748,13 +1760,13 @@ public class UMLModelDiff {
 				   List<OperationInvocation> operationInvocations = mapper.getOperation1().getAllOperationInvocations();
 				   List<OperationInvocation> removedOperationInvocations = new ArrayList<OperationInvocation>();
 				   for(OperationInvocation invocation : operationInvocations) {
-					   if(invocation.matchesOperation(removedOperation, mapper.getOperation1().variableDeclarationMap(), this)) {
+					   if(invocation.matchesOperation(removedOperation, mapper.getOperation1(), this)) {
 						   removedOperationInvocations.add(invocation);
 					   }
 				   }
 				   if(removedOperationInvocations.size() > 0) {
 						for(OperationInvocation removedOperationInvocation : removedOperationInvocations) {
-							if(!invocationMatchesWithAddedOperation(removedOperationInvocation, mapper.getOperation1().variableDeclarationMap(), mapper.getOperation2().getAllOperationInvocations())) {
+							if(!invocationMatchesWithAddedOperation(removedOperationInvocation, mapper.getOperation1(), mapper.getOperation2().getAllOperationInvocations())) {
 								List<String> arguments = removedOperationInvocation.getArguments();
 								List<String> parameters = removedOperation.getParameterNameList();
 								Map<String, String> parameterToArgumentMap1 = new LinkedHashMap<String, String>();
@@ -1805,7 +1817,7 @@ public class UMLModelDiff {
 		int delegateStatements = 0;
 		for(StatementObject statement : operationBodyMapper.getNonMappedLeavesT1()) {
 			OperationInvocation invocation = statement.invocationCoveringEntireFragment();
-			if(invocation != null && invocation.matchesOperation(operationBodyMapper.getOperation1())) {
+			if(invocation != null && invocation.matchesOperation(operationBodyMapper.getOperation1(), parentMapper.getOperation1(), this)) {
 				delegateStatements++;
 			}
 		}
@@ -1818,10 +1830,10 @@ public class UMLModelDiff {
 				(exactMatches > 1 && nonMappedElementsT1-exactMatches < 20));
 	}
 
-	private boolean invocationMatchesWithAddedOperation(OperationInvocation removedOperationInvocation, Map<String, Set<VariableDeclaration>> variableDeclarationMap, List<OperationInvocation> operationInvocationsInNewMethod) {
+	private boolean invocationMatchesWithAddedOperation(OperationInvocation removedOperationInvocation, UMLOperation callerOperation, List<OperationInvocation> operationInvocationsInNewMethod) {
 		if(operationInvocationsInNewMethod.contains(removedOperationInvocation)) {
 			for(UMLOperation addedOperation : getAddedOperationsInCommonClasses()) {
-				if(removedOperationInvocation.matchesOperation(addedOperation, variableDeclarationMap, this)) {
+				if(removedOperationInvocation.matchesOperation(addedOperation, callerOperation, this)) {
 					return true;
 				}
 			}
@@ -1837,7 +1849,7 @@ public class UMLModelDiff {
                List<OperationInvocation> operationInvocations = ExtractOperationDetection.getInvocationsInSourceOperationAfterExtraction(mapper);
                List<OperationInvocation> addedOperationInvocations = new ArrayList<OperationInvocation>();
                for(OperationInvocation invocation : operationInvocations) {
-                  if(invocation.matchesOperation(addedOperation, mapper.getOperation2().variableDeclarationMap(), this)) {
+                  if(invocation.matchesOperation(addedOperation, mapper.getOperation2(), this)) {
                      addedOperationInvocations.add(invocation);
                   }
                }
@@ -1859,7 +1871,7 @@ public class UMLModelDiff {
             		  String anonymousID = "";
             		  for(int i=tokens.length-1; i>=0; i--) {
             			  String token = tokens[i];
-            			  if(isNumeric(token) || Character.isLowerCase(token.charAt(0))) {
+            			  if(PrefixSuffixUtils.isNumeric(token) || Character.isLowerCase(token.charAt(0))) {
             				  anonymousID = "." + token + anonymousID;
             			  }
             			  else {
@@ -1960,7 +1972,7 @@ public class UMLModelDiff {
 
    private boolean isAnonymousClassName(String className) {
 	   String anonymousID = className.substring(className.lastIndexOf(".")+1, className.length());
-	   return isNumeric(anonymousID) || Character.isLowerCase(anonymousID.charAt(0));
+	   return PrefixSuffixUtils.isNumeric(anonymousID) || Character.isLowerCase(anonymousID.charAt(0));
    }
 
    private boolean conflictingExpression(OperationInvocation invocation, UMLOperation addedOperation, Map<String, Set<VariableDeclaration>> variableDeclarationMap) {
@@ -2735,6 +2747,14 @@ public class UMLModelDiff {
         allClassesDiff.addAll(innerClassMoveDiffList);
         allClassesDiff.addAll(classRenameDiffList);
         return allClassesDiff;
+    }
+    
+    public List<UMLClass> getRemovedClasses() {
+        return new ArrayList<>(removedClasses);
+    }
+
+    public List<UMLClass> getAddedClasses() {
+        return new ArrayList<>(addedClasses);
     }
 
 }

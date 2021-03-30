@@ -8,6 +8,7 @@ import org.refactoringminer.api.Refactoring;
 import org.refactoringminer.util.PrefixSuffixUtils;
 
 import gr.uom.java.xmi.UMLOperation;
+import gr.uom.java.xmi.decomposition.replacement.CompositeReplacement;
 import gr.uom.java.xmi.decomposition.replacement.MethodInvocationReplacement;
 import gr.uom.java.xmi.decomposition.replacement.ObjectCreationReplacement;
 import gr.uom.java.xmi.decomposition.replacement.Replacement;
@@ -62,7 +63,7 @@ public abstract class AbstractCodeMapping {
 	}
 
 	public boolean isExact() {
-		return (fragment1.getArgumentizedString().equals(fragment2.getArgumentizedString()) ||
+		return (fragment1.getArgumentizedString().equals(fragment2.getArgumentizedString()) || argumentizedStringExactAfterTypeReplacement() ||
 				fragment1.getString().equals(fragment2.getString()) || isExactAfterAbstraction() || containsIdenticalOrCompositeReplacement()) && !isKeyword();
 	}
 
@@ -70,6 +71,22 @@ public abstract class AbstractCodeMapping {
 		return fragment1.getString().startsWith("return;") ||
 				fragment1.getString().startsWith("break;") ||
 				fragment1.getString().startsWith("continue;");
+	}
+
+	private boolean argumentizedStringExactAfterTypeReplacement() {
+		String s1 = fragment1.getArgumentizedString();
+		String s2 = fragment2.getArgumentizedString();
+		for(Replacement r : replacements) {
+			if(r.getType().equals(ReplacementType.TYPE)) {
+				if(s1.startsWith(r.getBefore()) && s2.startsWith(r.getAfter())) {
+					String temp = s2.replace(r.getAfter(), r.getBefore());
+					if(s1.equals(temp) || (s1 + ";\n").equals(temp)) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
 	}
 
 	private boolean isExactAfterAbstraction() {
@@ -97,6 +114,15 @@ public abstract class AbstractCodeMapping {
 			}
 		}
 		return false;
+	}
+
+	public CompositeReplacement containsCompositeReplacement() {
+		for(Replacement r : replacements) {
+			if(r.getType().equals(ReplacementType.COMPOSITE)) {
+				return (CompositeReplacement)r;
+			}
+		}
+		return null;
 	}
 
 	public void addReplacement(Replacement replacement) {
