@@ -83,12 +83,22 @@ public class UMLModelDiff {
 			   return umlClass;
 		   }
 	   }
+	   for(UMLClass umlClass : parentModel.getClassList()) {
+		   if(umlClass.getName().endsWith("." + className)) {
+			   return umlClass;
+		   }
+	   }
 	   return null;
    }
 
    public UMLAbstractClass findClassInChildModel(String className) {
 	   for(UMLClass umlClass : childModel.getClassList()) {
 		   if(umlClass.getName().equals(className)) {
+			   return umlClass;
+		   }
+	   }
+	   for(UMLClass umlClass : childModel.getClassList()) {
+		   if(umlClass.getName().endsWith("." + className)) {
 			   return umlClass;
 		   }
 	   }
@@ -2633,6 +2643,18 @@ public class UMLModelDiff {
 		   if(refactoring instanceof MoveOperationRefactoring) {
 			   MoveOperationRefactoring moveRefactoring = (MoveOperationRefactoring)refactoring;
 			   if(moveRefactoring.getOriginalOperation().equals(removedOperation)) {
+				   return true;
+			   }
+		   }
+	   }
+	   return false;
+   }
+
+   public boolean refactoringListContainsAnotherMoveRefactoringWithTheSameAddedOperation(UMLOperation addedOperation) {
+	   for(Refactoring refactoring : refactorings) {
+		   if(refactoring instanceof MoveOperationRefactoring) {
+			   MoveOperationRefactoring moveRefactoring = (MoveOperationRefactoring)refactoring;
+			   if(moveRefactoring.getMovedOperation().equals(addedOperation)) {
 				   return true;
 			   }
 		   }
