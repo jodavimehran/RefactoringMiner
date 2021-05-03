@@ -54,7 +54,7 @@ public class RefactoringMiner {
 		}
 		String folder = args[1];
 		String branch = null;
-		if (args.length == 3) {
+		if (containsBranchArgument(args)) {
 			branch = args[2];
 		}
 		GitService gitService = new GitServiceImpl();
@@ -89,6 +89,10 @@ public class RefactoringMiner {
 		}
 	}
 
+	private static boolean containsBranchArgument(String[] args) {
+		return args.length == 3 || (args.length > 3 && args[3].equalsIgnoreCase("-json"));
+	}
+
 	private static void detectBetweenCommits(String[] args) throws Exception {
 		int maxArgLength = processJSONoption(args, 4);
 		if (!(args.length == maxArgLength-1 || args.length == maxArgLength)) {
@@ -96,7 +100,7 @@ public class RefactoringMiner {
 		}
 		String folder = args[1];
 		String startCommit = args[2];
-		String endCommit = (args.length == 4) ? args[3] : null;
+		String endCommit = containsEndArgument(args) ? args[3] : null;
 		GitService gitService = new GitServiceImpl();
 		try (Repository repo = gitService.openRepository(folder)) {
 			String gitURL = repo.getConfig().getString("remote", "origin", "url");
@@ -136,7 +140,7 @@ public class RefactoringMiner {
 		}
 		String folder = args[1];
 		String startTag = args[2];
-		String endTag = (args.length == 4) ? args[3] : null;
+		String endTag = containsEndArgument(args) ? args[3] : null;
 		GitService gitService = new GitServiceImpl();
 		try (Repository repo = gitService.openRepository(folder)) {
 			String gitURL = repo.getConfig().getString("remote", "origin", "url");
@@ -167,6 +171,10 @@ public class RefactoringMiner {
 			});
 			endJSON();
 		}
+	}
+
+	private static boolean containsEndArgument(String[] args) {
+		return args.length == 4 || (args.length > 4 && args[4].equalsIgnoreCase("-json"));
 	}
 
 	private static void detectAtCommit(String[] args) throws Exception {
