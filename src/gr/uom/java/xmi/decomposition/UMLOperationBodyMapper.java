@@ -667,8 +667,6 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 		candidateAttributeRenames.addAll(analysis.getCandidateAttributeRenames());
 		candidateAttributeMerges.addAll(analysis.getCandidateAttributeMerges());
 		candidateAttributeSplits.addAll(analysis.getCandidateAttributeSplits());
-		TypeReplacementAnalysis typeAnalysis = new TypeReplacementAnalysis(this.getMappings());
-		refactorings.addAll(typeAnalysis.getChangedTypes());
 		if (parentMapper == null) {
 			VariableChangeAnalysis variableChangeAnalysis = new VariableChangeAnalysis(this, refactorings);
 			removedVariables.addAll(variableChangeAnalysis.getRemovedVariables());

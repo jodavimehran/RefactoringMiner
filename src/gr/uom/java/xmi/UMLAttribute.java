@@ -20,6 +20,8 @@ public class UMLAttribute implements Comparable<UMLAttribute>, Serializable, Loc
 	private UMLType superclass;
 	private boolean isFinal;
 	private boolean isStatic;
+	private boolean isTransient;
+	private boolean isVolatile;
 	private VariableDeclaration variableDeclaration;
 	private List<UMLAnonymousClass> anonymousClassList;
 	private UMLJavadoc javadoc;
@@ -84,6 +86,22 @@ public class UMLAttribute implements Comparable<UMLAttribute>, Serializable, Loc
 
 	public void setStatic(boolean isStatic) {
 		this.isStatic = isStatic;
+	}
+
+	public boolean isTransient() {
+		return isTransient;
+	}
+
+	public void setTransient(boolean isTransient) {
+		this.isTransient = isTransient;
+	}
+
+	public boolean isVolatile() {
+		return isVolatile;
+	}
+
+	public void setVolatile(boolean isVolatile) {
+		this.isVolatile = isVolatile;
 	}
 
 	public String getNonQualifiedClassName() {
