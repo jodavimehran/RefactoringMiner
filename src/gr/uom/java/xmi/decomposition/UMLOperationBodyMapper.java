@@ -1058,12 +1058,13 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 				TreeSet<CompositeStatementObjectMapping> mappingSet = new TreeSet<CompositeStatementObjectMapping>();
 				for(ListIterator<CompositeStatementObject> innerNodeIterator2 = innerNodes2.listIterator(); innerNodeIterator2.hasNext();) {
 					CompositeStatementObject statement2 = innerNodeIterator2.next();
-					double score = computeScore(statement1, statement2, removedOperations, addedOperations, tryWithResourceMigration);
 					if((statement1.getString().equals(statement2.getString()) || statement1.getArgumentizedString().equals(statement2.getArgumentizedString())) &&
-							statement1.getDepth() == statement2.getDepth() &&
-							(score > 0 || Math.max(statement1.getStatements().size(), statement2.getStatements().size()) == 0)) {
-						CompositeStatementObjectMapping mapping = createCompositeMapping(statement1, statement2, parameterToArgumentMap, score);
-						mappingSet.add(mapping);
+							statement1.getDepth() == statement2.getDepth()) {
+						double score = computeScore(statement1, statement2, removedOperations, addedOperations, tryWithResourceMigration);	
+						if(score > 0 || Math.max(statement1.getStatements().size(), statement2.getStatements().size()) == 0) {
+							CompositeStatementObjectMapping mapping = createCompositeMapping(statement1, statement2, parameterToArgumentMap, score);
+							mappingSet.add(mapping);
+						}
 					}
 				}
 				if(!mappingSet.isEmpty()) {
@@ -1080,11 +1081,12 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 				TreeSet<CompositeStatementObjectMapping> mappingSet = new TreeSet<CompositeStatementObjectMapping>();
 				for(ListIterator<CompositeStatementObject> innerNodeIterator2 = innerNodes2.listIterator(); innerNodeIterator2.hasNext();) {
 					CompositeStatementObject statement2 = innerNodeIterator2.next();
-					double score = computeScore(statement1, statement2, removedOperations, addedOperations, tryWithResourceMigration);
-					if((statement1.getString().equals(statement2.getString()) || statement1.getArgumentizedString().equals(statement2.getArgumentizedString())) &&
-							(score > 0 || Math.max(statement1.getStatements().size(), statement2.getStatements().size()) == 0)) {
-						CompositeStatementObjectMapping mapping = createCompositeMapping(statement1, statement2, parameterToArgumentMap, score);
-						mappingSet.add(mapping);
+					if(statement1.getString().equals(statement2.getString()) || statement1.getArgumentizedString().equals(statement2.getArgumentizedString())) {
+						double score = computeScore(statement1, statement2, removedOperations, addedOperations, tryWithResourceMigration);	
+						if(score > 0 || Math.max(statement1.getStatements().size(), statement2.getStatements().size()) == 0) {
+							CompositeStatementObjectMapping mapping = createCompositeMapping(statement1, statement2, parameterToArgumentMap, score);
+							mappingSet.add(mapping);
+						}
 					}
 				}
 				if(!mappingSet.isEmpty()) {
@@ -1133,12 +1135,13 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 				TreeSet<CompositeStatementObjectMapping> mappingSet = new TreeSet<CompositeStatementObjectMapping>();
 				for(ListIterator<CompositeStatementObject> innerNodeIterator1 = innerNodes1.listIterator(); innerNodeIterator1.hasNext();) {
 					CompositeStatementObject statement1 = innerNodeIterator1.next();
-					double score = computeScore(statement1, statement2, removedOperations, addedOperations, tryWithResourceMigration);
 					if((statement1.getString().equals(statement2.getString()) || statement1.getArgumentizedString().equals(statement2.getArgumentizedString())) &&
-							statement1.getDepth() == statement2.getDepth() &&
-							(score > 0 || Math.max(statement1.getStatements().size(), statement2.getStatements().size()) == 0)) {
-						CompositeStatementObjectMapping mapping = createCompositeMapping(statement1, statement2, parameterToArgumentMap, score);
-						mappingSet.add(mapping);
+							statement1.getDepth() == statement2.getDepth()) {
+						double score = computeScore(statement1, statement2, removedOperations, addedOperations, tryWithResourceMigration);
+						if(score > 0 || Math.max(statement1.getStatements().size(), statement2.getStatements().size()) == 0) {
+							CompositeStatementObjectMapping mapping = createCompositeMapping(statement1, statement2, parameterToArgumentMap, score);
+							mappingSet.add(mapping);
+						}
 					}
 				}
 				if(!mappingSet.isEmpty()) {
@@ -1155,11 +1158,12 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 				TreeSet<CompositeStatementObjectMapping> mappingSet = new TreeSet<CompositeStatementObjectMapping>();
 				for(ListIterator<CompositeStatementObject> innerNodeIterator1 = innerNodes1.listIterator(); innerNodeIterator1.hasNext();) {
 					CompositeStatementObject statement1 = innerNodeIterator1.next();
-					double score = computeScore(statement1, statement2, removedOperations, addedOperations, tryWithResourceMigration);
-					if((statement1.getString().equals(statement2.getString()) || statement1.getArgumentizedString().equals(statement2.getArgumentizedString())) &&
-							(score > 0 || Math.max(statement1.getStatements().size(), statement2.getStatements().size()) == 0)) {
-						CompositeStatementObjectMapping mapping = createCompositeMapping(statement1, statement2, parameterToArgumentMap, score);
-						mappingSet.add(mapping);
+					if(statement1.getString().equals(statement2.getString()) || statement1.getArgumentizedString().equals(statement2.getArgumentizedString())) {
+						double score = computeScore(statement1, statement2, removedOperations, addedOperations, tryWithResourceMigration);	
+						if(score > 0 || Math.max(statement1.getStatements().size(), statement2.getStatements().size()) == 0) {
+							CompositeStatementObjectMapping mapping = createCompositeMapping(statement1, statement2, parameterToArgumentMap, score);
+							mappingSet.add(mapping);
+						}
 					}
 				}
 				if(!mappingSet.isEmpty()) {

@@ -51,6 +51,7 @@ import org.refactoringminer.util.PrefixSuffixUtils;
 
 public class UMLModelDiff {
    private static final Pattern RETURN_NUMBER_LITERAL = Pattern.compile("return \\d+;\n");
+   private static final int MAXIMUM_NUMBER_OF_COMPARED_METHODS = 200;
    private final UMLModel parentModel;
    private final UMLModel childModel;
    private final List<UMLClass> addedClasses = new ArrayList<>();
@@ -1489,9 +1490,18 @@ public class UMLModelDiff {
       refactorings.addAll(identifyExtractClassRefactorings(classRenameDiffList));
       checkForOperationMovesBetweenCommonClasses();
       checkForOperationMovesIncludingRemovedAndAddedClasses();
-      checkForExtractedAndMovedOperations(getOperationBodyMappersInCommonClasses(), getAddedAndExtractedOperationsInCommonClasses());
-      checkForExtractedAndMovedOperations(getOperationBodyMappersInMovedAndRenamedClasses(), getAddedOperationsInMovedAndRenamedClasses());
-      checkForMovedAndInlinedOperations(getOperationBodyMappersInCommonClasses(), getRemovedAndInlinedOperationsInCommonClasses());
+      List<UMLOperation> addedAndExtractedOperationsInCommonClasses = getAddedAndExtractedOperationsInCommonClasses();
+      if(addedAndExtractedOperationsInCommonClasses.size() <= MAXIMUM_NUMBER_OF_COMPARED_METHODS) {
+    	  checkForExtractedAndMovedOperations(getOperationBodyMappersInCommonClasses(), addedAndExtractedOperationsInCommonClasses);
+      }
+      List<UMLOperation> addedOperationsInMovedAndRenamedClasses = getAddedOperationsInMovedAndRenamedClasses();
+      if(addedOperationsInMovedAndRenamedClasses.size() <= MAXIMUM_NUMBER_OF_COMPARED_METHODS) {
+    	  checkForExtractedAndMovedOperations(getOperationBodyMappersInMovedAndRenamedClasses(), addedOperationsInMovedAndRenamedClasses);
+      }
+      List<UMLOperation> removedAndInlinedOperationsInCommonClasses = getRemovedAndInlinedOperationsInCommonClasses();
+      if(removedAndInlinedOperationsInCommonClasses.size() <= MAXIMUM_NUMBER_OF_COMPARED_METHODS) {
+    	  checkForMovedAndInlinedOperations(getOperationBodyMappersInCommonClasses(), removedAndInlinedOperationsInCommonClasses);
+      }
       List<MoveAttributeRefactoring> moveAttributeRefactorings = new ArrayList<MoveAttributeRefactoring>();
       moveAttributeRefactorings.addAll(checkForAttributeMovesBetweenCommonClasses());
       moveAttributeRefactorings.addAll(checkForAttributeMovesIncludingAddedClasses());
@@ -2085,14 +2095,18 @@ public class UMLModelDiff {
     		  removedOperations.addAll(removedClass.getOperations());
     	  }
       }
-      checkForOperationMoves(addedOperations, removedOperations);
+      if(removedOperations.size() <= MAXIMUM_NUMBER_OF_COMPARED_METHODS || addedOperations.size() <= MAXIMUM_NUMBER_OF_COMPARED_METHODS) {
+    	  checkForOperationMoves(addedOperations, removedOperations);
+      }
    }
 
    private void checkForOperationMovesBetweenCommonClasses() throws RefactoringMinerTimedOutException {
       List<UMLOperation> addedOperations = getAddedAndExtractedOperationsInCommonClasses();
       addedOperations.addAll(getAddedOperationsInMovedAndRenamedClasses());
       List<UMLOperation> removedOperations = getRemovedOperationsInCommonMovedRenamedClasses();
-      checkForOperationMoves(addedOperations, removedOperations);
+      if(removedOperations.size() <= MAXIMUM_NUMBER_OF_COMPARED_METHODS || addedOperations.size() <= MAXIMUM_NUMBER_OF_COMPARED_METHODS) {
+    	  checkForOperationMoves(addedOperations, removedOperations);
+      }
    }
 
    private boolean outerClassMovedOrRenamed(UMLClass umlClass) {
