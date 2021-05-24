@@ -87,7 +87,10 @@ public enum RefactoringType {
 	ADD_VARIABLE_MODIFIER("Add Variable Modifier", "Add Variable Modifier (.+) in variable (.+) in method (.+) from class (.+)"),
 	ADD_PARAMETER_MODIFIER("Add Parameter Modifier", "Add Parameter Modifier (.+) in parameter (.+) in method (.+) from class (.+)"),
 	REMOVE_VARIABLE_MODIFIER("Remove Variable Modifier", "Remove Variable Modifier (.+) in variable (.+) in method (.+) from class (.+)"),
-	REMOVE_PARAMETER_MODIFIER("Remove Parameter Modifier", "Remove Parameter Modifier (.+) in parameter (.+) in method (.+) from class (.+)");
+	REMOVE_PARAMETER_MODIFIER("Remove Parameter Modifier", "Remove Parameter Modifier (.+) in parameter (.+) in method (.+) from class (.+)"),
+	CHANGE_CLASS_ACCESS_MODIFIER("Change Class Access Modifier", "Change Class Access Modifier (.+) to (.+) in class (.+)"),
+	ADD_CLASS_MODIFIER("Add Class Modifier", "Add Class Modifier (.+) in class (.+)"),
+	REMOVE_CLASS_MODIFIER("Remove Class Modifier", "Remove Class Modifier (.+) in class (.+)");
 
 	private String displayName;
 	private Pattern regex;
@@ -167,7 +170,10 @@ public enum RefactoringType {
 		ADD_VARIABLE_MODIFIER,
 		ADD_PARAMETER_MODIFIER,
 		REMOVE_VARIABLE_MODIFIER,
-		REMOVE_PARAMETER_MODIFIER
+		REMOVE_PARAMETER_MODIFIER,
+		CHANGE_CLASS_ACCESS_MODIFIER,
+		ADD_CLASS_MODIFIER,
+		REMOVE_CLASS_MODIFIER
 	};
 
 	private RefactoringType(String displayName, String regex, int ... aggregateGroups) {
