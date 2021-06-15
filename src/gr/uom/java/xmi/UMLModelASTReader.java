@@ -133,7 +133,7 @@ public class UMLModelASTReader {
 			packageName = packageDeclaration.getName().getFullyQualifiedName();
 		else
 			packageName = "";
-
+		
 		List<ImportDeclaration> imports = compilationUnit.imports();
 		List<String> importedTypes = new ArrayList<String>();
 		for(ImportDeclaration importDeclaration : imports) {
@@ -216,10 +216,11 @@ public class UMLModelASTReader {
 		}
 		String className = enumDeclaration.getName().getFullyQualifiedName();
 		LocationInfo locationInfo = generateLocationInfo(cu, sourceFile, enumDeclaration, CodeElementType.TYPE_DECLARATION);
-
-		UMLClass umlClass = new UMLClass(packageName, className, locationInfo, importedTypes, javadoc, null, getVisibility(enumDeclaration), enumDeclaration.isPackageMemberTypeDeclaration(), true, false, false);
-
-
+		UMLClass umlClass = new UMLClass(packageName, className, locationInfo, enumDeclaration.isPackageMemberTypeDeclaration(), importedTypes);
+		umlClass.setJavadoc(javadoc);
+		
+		umlClass.setEnum(true);
+		
 		List<Type> superInterfaceTypes = enumDeclaration.superInterfaceTypes();
     	for(Type interfaceType : superInterfaceTypes) {
     		UMLType umlType = UMLType.extractTypeObject(cu, sourceFile, interfaceType, 0);
@@ -227,18 +228,18 @@ public class UMLModelASTReader {
     		umlClass.addImplementedInterface(umlType);
     		getUmlModel().addRealization(umlRealization);
     	}
-
+    	
     	List<EnumConstantDeclaration> enumConstantDeclarations = enumDeclaration.enumConstants();
     	for(EnumConstantDeclaration enumConstantDeclaration : enumConstantDeclarations) {
 			processEnumConstantDeclaration(cu, enumConstantDeclaration, sourceFile, umlClass, comments);
 		}
-
+		
 		processModifiers(cu, sourceFile, enumDeclaration, umlClass);
-
+		
 		processBodyDeclarations(cu, enumDeclaration, packageName, sourceFile, importedTypes, umlClass, comments);
-
+		
 		processAnonymousClassDeclarations(cu, enumDeclaration, packageName, sourceFile, className, umlClass);
-
+		
 		this.getUmlModel().addClass(umlClass);
 		distributeComments(comments, locationInfo, umlClass.getComments());
 	}
@@ -252,7 +253,6 @@ public class UMLModelASTReader {
 				List<UMLAttribute> attributes = processFieldDeclaration(cu, fieldDeclaration, umlClass.isInterface(), sourceFile, comments);
 	    		for(UMLAttribute attribute : attributes) {
 	    			attribute.setClassName(umlClass.getName());
-	    			attribute.setSuperclass(umlClass.getSuperclass());
 	    			umlClass.addAttribute(attribute);
 	    		}
 			}
@@ -260,7 +260,6 @@ public class UMLModelASTReader {
 				MethodDeclaration methodDeclaration = (MethodDeclaration)bodyDeclaration;
 				UMLOperation operation = processMethodDeclaration(cu, methodDeclaration, packageName, umlClass.isInterface(), sourceFile, comments);
 	    		operation.setClassName(umlClass.getName());
-	    		operation.setSuperclass(umlClass.getSuperclass());
 	    		umlClass.addOperation(operation);
 			}
 			else if(bodyDeclaration instanceof TypeDeclaration) {
@@ -282,17 +281,15 @@ public class UMLModelASTReader {
 		}
 		String className = typeDeclaration.getName().getFullyQualifiedName();
 		LocationInfo locationInfo = generateLocationInfo(cu, sourceFile, typeDeclaration, CodeElementType.TYPE_DECLARATION);
-
-		Type superclassType = typeDeclaration.getSuperclassType();
-		UMLType superClass = null;
-		if(superclassType != null) {
-			superClass = UMLType.extractTypeObject(cu, sourceFile, superclassType, 0);
-		}
-
-		UMLClass umlClass = new UMLClass(packageName, className, locationInfo, importedTypes, javadoc, superClass, getVisibility(typeDeclaration), typeDeclaration.isPackageMemberTypeDeclaration(), false, isAbstract(typeDeclaration), typeDeclaration.isInterface());
-
+		UMLClass umlClass = new UMLClass(packageName, className, locationInfo, typeDeclaration.isPackageMemberTypeDeclaration(), importedTypes);
+		umlClass.setJavadoc(javadoc);
+		
+		if(typeDeclaration.isInterface()) {
+			umlClass.setInterface(true);
+    	}
+    	
     	processModifiers(cu, sourceFile, typeDeclaration, umlClass);
-
+		
     	List<TypeParameter> typeParameters = typeDeclaration.typeParameters();
 		for(TypeParameter typeParameter : typeParameters) {
 			UMLTypeParameter umlTypeParameter = new UMLTypeParameter(typeParameter.getName().getFullyQualifiedName());
@@ -309,12 +306,15 @@ public class UMLModelASTReader {
 			}
     		umlClass.addTypeParameter(umlTypeParameter);
     	}
-
-    	if(superClass != null) {
-    		UMLGeneralization umlGeneralization = new UMLGeneralization(umlClass, superClass.getClassType());
+    	
+    	Type superclassType = typeDeclaration.getSuperclassType();
+    	if(superclassType != null) {
+    		UMLType umlType = UMLType.extractTypeObject(cu, sourceFile, superclassType, 0);
+    		UMLGeneralization umlGeneralization = new UMLGeneralization(umlClass, umlType.getClassType());
+    		umlClass.setSuperclass(umlType);
     		getUmlModel().addGeneralization(umlGeneralization);
     	}
-
+    	
     	List<Type> superInterfaceTypes = typeDeclaration.superInterfaceTypes();
     	for(Type interfaceType : superInterfaceTypes) {
     		UMLType umlType = UMLType.extractTypeObject(cu, sourceFile, interfaceType, 0);
@@ -322,34 +322,32 @@ public class UMLModelASTReader {
     		umlClass.addImplementedInterface(umlType);
     		getUmlModel().addRealization(umlRealization);
     	}
-
+    	
     	FieldDeclaration[] fieldDeclarations = typeDeclaration.getFields();
     	for(FieldDeclaration fieldDeclaration : fieldDeclarations) {
     		List<UMLAttribute> attributes = processFieldDeclaration(cu, fieldDeclaration, umlClass.isInterface(), sourceFile, comments);
     		for(UMLAttribute attribute : attributes) {
     			attribute.setClassName(umlClass.getName());
-				attribute.setSuperclass(umlClass.getSuperclass());;
-				umlClass.addAttribute(attribute);
+    			umlClass.addAttribute(attribute);
     		}
     	}
-
+    	
     	MethodDeclaration[] methodDeclarations = typeDeclaration.getMethods();
     	for(MethodDeclaration methodDeclaration : methodDeclarations) {
     		UMLOperation operation = processMethodDeclaration(cu, methodDeclaration, packageName, umlClass.isInterface(), sourceFile, comments);
     		operation.setClassName(umlClass.getName());
-			operation.setSuperclass(umlClass.getSuperclass());
-			umlClass.addOperation(operation);
+    		umlClass.addOperation(operation);
     	}
-
+    	
     	processAnonymousClassDeclarations(cu, typeDeclaration, packageName, sourceFile, className, umlClass);
-
+    	
     	this.getUmlModel().addClass(umlClass);
-
+		
 		TypeDeclaration[] types = typeDeclaration.getTypes();
 		for(TypeDeclaration type : types) {
 			processTypeDeclaration(cu, type, umlClass.getName(), sourceFile, importedTypes, comments);
 		}
-
+		
 		List<BodyDeclaration> bodyDeclarations = typeDeclaration.bodyDeclarations();
 		for(BodyDeclaration bodyDeclaration : bodyDeclarations) {
 			if(bodyDeclaration instanceof EnumDeclaration) {
@@ -365,12 +363,12 @@ public class UMLModelASTReader {
 		AnonymousClassDeclarationVisitor visitor = new AnonymousClassDeclarationVisitor();
     	typeDeclaration.accept(visitor);
     	Set<AnonymousClassDeclaration> anonymousClassDeclarations = visitor.getAnonymousClassDeclarations();
-
+    	
     	DefaultMutableTreeNode root = new DefaultMutableTreeNode();
     	for(AnonymousClassDeclaration anonymous : anonymousClassDeclarations) {
     		insertNode(anonymous, root);
     	}
-
+    	
     	List<UMLAnonymousClass> createdAnonymousClasses = new ArrayList<UMLAnonymousClass>();
     	Enumeration enumeration = root.postorderEnumeration();
     	while(enumeration.hasMoreElements()) {
@@ -458,10 +456,10 @@ public class UMLModelASTReader {
 		UMLOperation umlOperation = new UMLOperation(methodName, locationInfo);
 		umlOperation.setJavadoc(javadoc);
 		distributeComments(comments, locationInfo, umlOperation.getComments());
-
+		
 		if(methodDeclaration.isConstructor())
 			umlOperation.setConstructor(true);
-
+		
 		int methodModifiers = methodDeclaration.getModifiers();
 		if((methodModifiers & Modifier.PUBLIC) != 0)
 			umlOperation.setVisibility("public");
@@ -473,13 +471,13 @@ public class UMLModelASTReader {
 			umlOperation.setVisibility("public");
 		else
 			umlOperation.setVisibility("package");
-
+		
 		if((methodModifiers & Modifier.ABSTRACT) != 0)
 			umlOperation.setAbstract(true);
-
+		
 		if((methodModifiers & Modifier.FINAL) != 0)
 			umlOperation.setFinal(true);
-
+		
 		if((methodModifiers & Modifier.STATIC) != 0)
 			umlOperation.setStatic(true);
 		
@@ -493,7 +491,7 @@ public class UMLModelASTReader {
 				umlOperation.addAnnotation(new UMLAnnotation(cu, sourceFile, annotation));
 			}
 		}
-
+		
 		List<TypeParameter> typeParameters = methodDeclaration.typeParameters();
 		for(TypeParameter typeParameter : typeParameters) {
 			UMLTypeParameter umlTypeParameter = new UMLTypeParameter(typeParameter.getName().getFullyQualifiedName());
@@ -510,7 +508,7 @@ public class UMLModelASTReader {
 			}
 			umlOperation.addTypeParameter(umlTypeParameter);
 		}
-
+		
 		Block block = methodDeclaration.getBody();
 		if(block != null) {
 			OperationBody body = new OperationBody(cu, sourceFile, block);
@@ -522,7 +520,7 @@ public class UMLModelASTReader {
 		else {
 			umlOperation.setBody(null);
 		}
-
+		
 		Type returnType = methodDeclaration.getReturnType2();
 		if(returnType != null) {
 			UMLType type = UMLType.extractTypeObject(cu, sourceFile, returnType, methodDeclaration.getExtraDimensions());
@@ -582,7 +580,7 @@ public class UMLModelASTReader {
 			umlAttribute.setVariableDeclaration(variableDeclaration);
 			umlAttribute.setJavadoc(javadoc);
 			distributeComments(comments, locationInfo, umlAttribute.getComments());
-
+			
 			int fieldModifiers = fieldDeclaration.getModifiers();
 			if((fieldModifiers & Modifier.PUBLIC) != 0)
 				umlAttribute.setVisibility("public");
@@ -594,10 +592,10 @@ public class UMLModelASTReader {
 				umlAttribute.setVisibility("public");
 			else
 				umlAttribute.setVisibility("package");
-
+			
 			if((fieldModifiers & Modifier.FINAL) != 0)
 				umlAttribute.setFinal(true);
-
+			
 			if((fieldModifiers & Modifier.STATIC) != 0)
 				umlAttribute.setStatic(true);
 			
@@ -611,12 +609,12 @@ public class UMLModelASTReader {
 		}
 		return attributes;
 	}
-
+	
 	private UMLAnonymousClass processAnonymousClassDeclaration(CompilationUnit cu, AnonymousClassDeclaration anonymous, String packageName, String binaryName, String codePath, String sourceFile, List<UMLComment> comments) {
 		List<BodyDeclaration> bodyDeclarations = anonymous.bodyDeclarations();
 		LocationInfo locationInfo = generateLocationInfo(cu, sourceFile, anonymous, CodeElementType.ANONYMOUS_CLASS_DECLARATION);
 		UMLAnonymousClass anonymousClass = new UMLAnonymousClass(packageName, binaryName, codePath, locationInfo);
-
+		
 		for(BodyDeclaration bodyDeclaration : bodyDeclarations) {
 			if(bodyDeclaration instanceof FieldDeclaration) {
 				FieldDeclaration fieldDeclaration = (FieldDeclaration)bodyDeclaration;
@@ -636,11 +634,11 @@ public class UMLModelASTReader {
 		distributeComments(comments, locationInfo, anonymousClass.getComments());
 		return anonymousClass;
 	}
-
+	
 	private void insertNode(AnonymousClassDeclaration childAnonymous, DefaultMutableTreeNode root) {
 		Enumeration enumeration = root.postorderEnumeration();
 		DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(childAnonymous);
-
+		
 		DefaultMutableTreeNode parentNode = root;
 		while(enumeration.hasMoreElements()) {
 			DefaultMutableTreeNode currentNode = (DefaultMutableTreeNode)enumeration.nextElement();
@@ -716,7 +714,7 @@ public class UMLModelASTReader {
 		}
 		return name.toString();
 	}
-
+	
 	private boolean isParent(ASTNode child, ASTNode parent) {
 		ASTNode current = child;
 		while(current.getParent() != null) {
@@ -729,21 +727,5 @@ public class UMLModelASTReader {
 
 	private LocationInfo generateLocationInfo(CompilationUnit cu, String sourceFile, ASTNode node, CodeElementType codeElementType) {
 		return new LocationInfo(cu, sourceFile, node, codeElementType);
-	}
-
-	private boolean isAbstract(AbstractTypeDeclaration typeDeclaration) {
-		return (typeDeclaration.getModifiers() & Modifier.ABSTRACT) != 0;
-	}
-
-	private String getVisibility(AbstractTypeDeclaration typeDeclaration) {
-		int modifiers = typeDeclaration.getModifiers();
-		if ((modifiers & Modifier.PUBLIC) != 0)
-			return "public";
-		else if ((modifiers & Modifier.PROTECTED) != 0)
-			return "protected";
-		else if ((modifiers & Modifier.PRIVATE) != 0)
-			return "private";
-		else
-			return "package";
 	}
 }

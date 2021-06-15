@@ -3,10 +3,13 @@ package gr.uom.java.xmi;
 import java.io.Serializable;
 
 public class UMLAnonymousClass extends UMLAbstractClass implements Comparable<UMLAnonymousClass>, Serializable, LocationInfoProvider {
-	private final String codePath;
+	private String codePath;
 	
 	public UMLAnonymousClass(String packageName, String name, String codePath, LocationInfo locationInfo) {
-    	super(locationInfo, packageName, name);
+    	super();
+		this.packageName = packageName;
+        this.name = name;
+        this.locationInfo = locationInfo;
         this.codePath = codePath;
     }
 
