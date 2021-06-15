@@ -55,6 +55,7 @@ public class OperationBody {
 				break;
 			}
 		}
+		sha512 = org.refactoringminer.util.Hashing.getSHA512(String.join("", stringRepresentation()));
 	}
 
 	public int statementCount() {

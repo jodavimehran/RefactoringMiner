@@ -2,6 +2,7 @@ package gr.uom.java.xmi.decomposition;
 
 import gr.uom.java.xmi.UMLAnonymousClass;
 import gr.uom.java.xmi.UMLAttribute;
+import gr.uom.java.xmi.UMLComment;
 import gr.uom.java.xmi.UMLOperation;
 import gr.uom.java.xmi.UMLParameter;
 import gr.uom.java.xmi.UMLType;
@@ -49,62 +50,64 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.refactoringminer.api.Refactoring;
 import org.refactoringminer.api.RefactoringMinerTimedOutException;
+import org.refactoringminer.util.Hashing;
 import org.refactoringminer.util.PrefixSuffixUtils;
 
 public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper> {
+	private UMLOperation operation1;
+	private UMLOperation operation2;
+	private Set<AbstractCodeMapping> mappings;
+	private List<StatementObject> nonMappedLeavesT1;
+	private List<StatementObject> nonMappedLeavesT2;
+	private List<CompositeStatementObject> nonMappedInnerNodesT1;
+	private List<CompositeStatementObject> nonMappedInnerNodesT2;
+	private Set<Refactoring> refactorings = new LinkedHashSet<Refactoring>();
+	private Set<CandidateAttributeRefactoring> candidateAttributeRenames = new LinkedHashSet<CandidateAttributeRefactoring>();
+	private Set<CandidateMergeVariableRefactoring> candidateAttributeMerges = new LinkedHashSet<CandidateMergeVariableRefactoring>();
+	private Set<CandidateSplitVariableRefactoring> candidateAttributeSplits = new LinkedHashSet<CandidateSplitVariableRefactoring>();
+	private List<UMLOperationBodyMapper> childMappers = new ArrayList<UMLOperationBodyMapper>();
+	private UMLOperationBodyMapper parentMapper;
 	private static final Pattern SPLIT_CONDITIONAL_PATTERN = Pattern.compile("(\\|\\|)|(&&)|(\\?)|(:)");
 	public static final Pattern SPLIT_CONCAT_STRING_PATTERN = Pattern.compile("(\\s)*(\\+)(\\s)*");
 	private static final int MAXIMUM_NUMBER_OF_COMPARED_STRINGS = 100;
-
-	private final UMLOperation operation1;
-	private final UMLOperation operation2;
-	private final UMLClassBaseDiff classDiff;
-
+	private UMLClassBaseDiff classDiff;
+	private UMLModelDiff modelDiff;
+	private UMLOperation callSiteOperation;
+	private Map<AbstractCodeFragment, UMLOperation> codeFragmentOperationMap1 = new LinkedHashMap<AbstractCodeFragment, UMLOperation>();
+	private Map<AbstractCodeFragment, UMLOperation> codeFragmentOperationMap2 = new LinkedHashMap<AbstractCodeFragment, UMLOperation>();
 	private final Set<Pair<VariableDeclaration, UMLOperation>> removedVariables = new LinkedHashSet<>();
 	private final Set<Pair<VariableDeclaration, UMLOperation>> addedVariables = new LinkedHashSet<>();
 	private final Set<VariableDeclarationReplacement> changedVariable = new LinkedHashSet<>();
-	private final Set<CandidateAttributeRefactoring> candidateAttributeRenames = new LinkedHashSet<>();
-	private final Set<CandidateMergeVariableRefactoring> candidateAttributeMerges = new LinkedHashSet<>();
-	private final Set<CandidateSplitVariableRefactoring> candidateAttributeSplits = new LinkedHashSet<>();
-	private final Set<AbstractCodeMapping> mappings = new LinkedHashSet<>();
-	private final List<StatementObject> nonMappedLeavesT1 = new ArrayList<>();
-	private final List<StatementObject> nonMappedLeavesT2 = new ArrayList<>();
-	private final List<CompositeStatementObject> nonMappedInnerNodesT1 = new ArrayList<>();
-	private final List<CompositeStatementObject> nonMappedInnerNodesT2 = new ArrayList<>();
-	private final Set<Refactoring> refactorings = new LinkedHashSet<>();
-	private final List<UMLOperationBodyMapper> childMappers = new ArrayList<>();
-	private final Map<AbstractCodeFragment, UMLOperation> codeFragmentOperationMap1 = new LinkedHashMap<>();
-	private final Map<AbstractCodeFragment, UMLOperation> codeFragmentOperationMap2 = new LinkedHashMap<>();
-	private final boolean same;
-
-	private UMLModelDiff modelDiff;
-	private UMLOperation callSiteOperation;
-	private UMLOperationBodyMapper parentMapper;
-
+	
 	public UMLOperationBodyMapper(UMLOperation operation1, UMLOperation operation2, UMLClassBaseDiff classDiff) throws RefactoringMinerTimedOutException {
 		this.classDiff = classDiff;
-		if (classDiff != null)
+		if(classDiff != null)
 			this.modelDiff = classDiff.getModelDiff();
 		this.operation1 = operation1;
 		this.operation2 = operation2;
-		this.same = checkSimilarity();
+		this.mappings = new LinkedHashSet<AbstractCodeMapping>();
+		this.nonMappedLeavesT1 = new ArrayList<StatementObject>();
+		this.nonMappedLeavesT2 = new ArrayList<StatementObject>();
+		this.nonMappedInnerNodesT1 = new ArrayList<CompositeStatementObject>();
+		this.nonMappedInnerNodesT2 = new ArrayList<CompositeStatementObject>();
 		OperationBody body1 = operation1.getBody();
 		OperationBody body2 = operation2.getBody();
-		if (body1 != null && body2 != null) {
+		if(body1 != null && body2 != null) {
 			CompositeStatementObject composite1 = body1.getCompositeStatement();
 			CompositeStatementObject composite2 = body2.getCompositeStatement();
 			List<StatementObject> leaves1 = composite1.getLeaves();
 			List<StatementObject> leaves2 = composite2.getLeaves();
-
+			
 			UMLOperationDiff operationDiff = new UMLOperationDiff(operation1, operation2);
 			Map<String, String> parameterToArgumentMap1 = new LinkedHashMap<String, String>();
 			Map<String, String> parameterToArgumentMap2 = new LinkedHashMap<String, String>();
 			List<UMLParameter> addedParameters = operationDiff.getAddedParameters();
-			if (addedParameters.size() == 1) {
+			if(addedParameters.size() == 1) {
 				UMLParameter addedParameter = addedParameters.get(0);
 				if(UMLModelDiff.looksLikeSameType(addedParameter.getType().getClassType(), operation1.getClassName())) {
 					parameterToArgumentMap1.put("this.", "");
@@ -196,7 +199,12 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 			this.modelDiff = classDiff.getModelDiff();
 		this.operation1 = parentMapper.operation1;
 		this.operation2 = parentMapper.operation2;
-		same = checkSimilarity();
+		this.mappings = new LinkedHashSet<AbstractCodeMapping>();
+		this.nonMappedLeavesT1 = new ArrayList<StatementObject>();
+		this.nonMappedLeavesT2 = new ArrayList<StatementObject>();
+		this.nonMappedInnerNodesT1 = new ArrayList<CompositeStatementObject>();
+		this.nonMappedInnerNodesT2 = new ArrayList<CompositeStatementObject>();
+		
 		if(lambda1.getExpression() != null && lambda2.getExpression() != null) {
 			List<AbstractExpression> leaves1 = new ArrayList<AbstractExpression>();
 			leaves1.add(lambda1.getExpression());
@@ -301,8 +309,12 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 		this.callSiteOperation = operationBodyMapper.operation2;
 		this.operation2 = addedOperation;
 		this.classDiff = classDiff;
-		this.same = checkSimilarity();
-
+		this.mappings = new LinkedHashSet<AbstractCodeMapping>();
+		this.nonMappedLeavesT1 = new ArrayList<StatementObject>();
+		this.nonMappedLeavesT2 = new ArrayList<StatementObject>();
+		this.nonMappedInnerNodesT1 = new ArrayList<CompositeStatementObject>();
+		this.nonMappedInnerNodesT2 = new ArrayList<CompositeStatementObject>();
+		
 		OperationBody addedOperationBody = addedOperation.getBody();
 		if(addedOperationBody != null) {
 			CompositeStatementObject composite2 = addedOperationBody.getCompositeStatement();
@@ -542,7 +554,12 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 		this.operation2 = operationBodyMapper.operation2;
 		this.callSiteOperation = operationBodyMapper.operation1;
 		this.classDiff = classDiff;
-		this.same = checkSimilarity();
+		this.mappings = new LinkedHashSet<AbstractCodeMapping>();
+		this.nonMappedLeavesT1 = new ArrayList<StatementObject>();
+		this.nonMappedLeavesT2 = new ArrayList<StatementObject>();
+		this.nonMappedInnerNodesT1 = new ArrayList<CompositeStatementObject>();
+		this.nonMappedInnerNodesT2 = new ArrayList<CompositeStatementObject>();
+		
 		OperationBody removedOperationBody = removedOperation.getBody();
 		if(removedOperationBody != null) {
 			CompositeStatementObject composite1 = removedOperationBody.getCompositeStatement();
@@ -4823,20 +4840,22 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 		return changedVariable;
 	}
 
-	private boolean checkSimilarity() {
+	public boolean differentBody() {
 		OperationBody body1 = operation1.getBody();
 		OperationBody body2 = operation2.getBody();
 
 		if (body1 == null && body2 == null) return true;
 
-		if ((body1 == null && body2 != null) || (body1 != null && body2 == null)) {
+		if (body1 == null || body2 == null) {
 			return false;
 		}
 		return body1.getSha512().equals(body2.getSha512());
 	}
 
-	public boolean notSame() {
-		return !same;
+	public boolean differentComment(){
+		String comments1 = Hashing.getSHA512(operation1.getComments().stream().map(UMLComment::getText).collect(Collectors.joining(";")));
+		String comments2 = Hashing.getSHA512(operation2.getComments().stream().map(UMLComment::getText).collect(Collectors.joining(";")));
+		return !comments1.equals(comments2);
 	}
 
 	public Pair<UMLOperation, UMLOperation> getOperationPair(){
