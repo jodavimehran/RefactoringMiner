@@ -28,7 +28,6 @@ public class UMLOperation implements Comparable<UMLOperation>, Serializable, Loc
 	private boolean isAbstract;
 	private List<UMLParameter> parameters;
 	private String className;
-	private UMLType superclass;
 	private boolean isConstructor;
 	private boolean isFinal;
 	private boolean isStatic;
@@ -965,13 +964,5 @@ public class UMLOperation implements Comparable<UMLOperation>, Serializable, Loc
 			return operationBody.loopWithVariables(currentElementName, collectionName);
 		}
 		return null;
-	}
-
-	public UMLType getSuperclass() {
-		return superclass;
-	}
-
-	public void setSuperclass(UMLType superclass) {
-		this.superclass = superclass;
 	}
 }

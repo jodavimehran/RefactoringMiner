@@ -1014,10 +1014,6 @@ public abstract class UMLClassBaseDiff extends UMLAbstractClassDiff implements C
 	}
 
 	public UMLAttribute findAttributeInOriginalClass(String attributeName) {
-		return getUmlAttribute(attributeName, originalClass, removedEnumConstants);
-	}
-
-	private UMLAttribute getUmlAttribute(String attributeName, UMLClass originalClass, List<UMLEnumConstant> removedEnumConstants) {
 		for(UMLAttribute attribute : originalClass.getAttributes()) {
 			if(attribute.getName().equals(attributeName)) {
 				return attribute;
@@ -1032,7 +1028,17 @@ public abstract class UMLClassBaseDiff extends UMLAbstractClassDiff implements C
 	}
 
 	public UMLAttribute findAttributeInNextClass(String attributeName) {
-		return getUmlAttribute(attributeName, nextClass, addedEnumConstants);
+		for(UMLAttribute attribute : nextClass.getAttributes()) {
+			if(attribute.getName().equals(attributeName)) {
+				return attribute;
+			}
+		}
+		for(UMLEnumConstant enumConstant : nextClass.getEnumConstants()) {
+			if(enumConstant.getName().equals(attributeName) && addedEnumConstants.contains(enumConstant)) {
+				return enumConstant;
+			}
+		}
+		return null;
 	}
 
 	private boolean inconsistentAttributeRename(Replacement pattern,
@@ -1063,7 +1069,7 @@ public abstract class UMLClassBaseDiff extends UMLAbstractClassDiff implements C
 			boolean variables2Contains = (allVariables2.contains(pattern.getAfter()) &&
 					!mapper.getOperation2().getParameterNameList().contains(pattern.getAfter())) ||
 					allVariables2.contains("this."+pattern.getAfter());
-			if(variables1contains && !variables2Contains) {
+			if(variables1contains && !variables2Contains) {	
 				counter++;
 			}
 			if(variables2Contains && !variables1contains) {
@@ -1136,7 +1142,7 @@ public abstract class UMLClassBaseDiff extends UMLAbstractClassDiff implements C
 						UMLOperation addedOperation = bestMapper.getOperation2();
 						addedOperations.remove(addedOperation);
 						removedOperationIterator.remove();
-
+	
 						UMLOperationDiff operationSignatureDiff = new UMLOperationDiff(removedOperation, addedOperation, bestMapper.getMappings());
 						operationDiffList.add(operationSignatureDiff);
 						refactorings.addAll(operationSignatureDiff.getRefactorings());
@@ -1182,7 +1188,7 @@ public abstract class UMLClassBaseDiff extends UMLAbstractClassDiff implements C
 						addedOperation = bestMapper.getOperation2();
 						removedOperations.remove(removedOperation);
 						addedOperationIterator.remove();
-
+	
 						UMLOperationDiff operationSignatureDiff = new UMLOperationDiff(removedOperation, addedOperation, bestMapper.getMappings());
 						operationDiffList.add(operationSignatureDiff);
 						refactorings.addAll(operationSignatureDiff.getRefactorings());
@@ -1695,7 +1701,7 @@ public abstract class UMLClassBaseDiff extends UMLAbstractClassDiff implements C
 				}
 			}
 		}
-
+		
 		UMLOperation operationBefore2 = null;
 		UMLOperation operationAfter2 = null;
 		List<UMLOperation> nextClassOperations = nextClass.getOperations();
@@ -1710,7 +1716,7 @@ public abstract class UMLClassBaseDiff extends UMLAbstractClassDiff implements C
 				}
 			}
 		}
-
+		
 		boolean operationsBeforeMatch = false;
 		if(operationBefore1 != null && operationBefore2 != null) {
 			operationsBeforeMatch = operationBefore1.equalReturnParameter(operationBefore2) && operationBefore1.equalParameterTypes(operationBefore2) && operationBefore1.getName().equals(operationBefore2.getName());
@@ -1898,7 +1904,14 @@ public abstract class UMLClassBaseDiff extends UMLAbstractClassDiff implements C
 
 	public Set<Pair<UMLOperation, UMLOperation>> getChangedBodyOperations(){
 		return operationBodyMapperList.stream()
-				.filter(UMLOperationBodyMapper::notSame)
+				.filter(UMLOperationBodyMapper::differentBody)
+				.map(UMLOperationBodyMapper::getOperationPair)
+				.collect(Collectors.toSet());
+	}
+
+	public Set<Pair<UMLOperation, UMLOperation>> getChangedCommentsOperations(){
+		return operationBodyMapperList.stream()
+				.filter(UMLOperationBodyMapper::differentComment)
 				.map(UMLOperationBodyMapper::getOperationPair)
 				.collect(Collectors.toSet());
 	}

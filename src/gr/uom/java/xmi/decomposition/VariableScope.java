@@ -9,77 +9,98 @@ import java.util.Objects;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 
 public class VariableScope {
-    private final String filePath;
-    private final int startOffset;
-    private final int endOffset;
-    private final int startLine;
-    private final int startColumn;
-    private final int endLine;
-    private final int endColumn;
-    private final List<AbstractCodeFragment> statementList = new ArrayList<>();
+	private String filePath;
+	private int startOffset;
+	private int endOffset;
+	private int startLine;
+	private int startColumn;
+	private int endLine;
+	private int endColumn;
+	private final List<AbstractCodeFragment> statementList = new ArrayList<>();
     private String parentSignature = "";
+	
+	public VariableScope(CompilationUnit cu, String filePath, int startOffset, int endOffset) {
+		//ASTNode parent = node.getParent();
+		this.filePath = filePath;
+		this.startOffset = startOffset;
+		this.endOffset = endOffset;
+		//this.startOffset = node.getStartPosition();
+		//this.endOffset = parent.getStartPosition() + parent.getLength();
+		
+		//lines are 1-based
+		this.startLine = cu.getLineNumber(startOffset);
+		this.endLine = cu.getLineNumber(endOffset);
+		//columns are 0-based
+		this.startColumn = cu.getColumnNumber(startOffset);
+		//convert to 1-based
+		if(this.startColumn > 0) {
+			this.startColumn += 1;
+		}
+		this.endColumn = cu.getColumnNumber(endOffset);
+		//convert to 1-based
+		if(this.endColumn > 0) {
+			this.endColumn += 1;
+		}
+	}
 
-    public VariableScope(CompilationUnit cu, String filePath, int startOffset, int endOffset) {
-        //ASTNode parent = node.getParent();
-        this.filePath = filePath;
-        this.startOffset = startOffset;
-        this.endOffset = endOffset;
-        //this.startOffset = node.getStartPosition();
-        //this.endOffset = parent.getStartPosition() + parent.getLength();
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + endColumn;
+		result = prime * result + endLine;
+		result = prime * result + endOffset;
+		result = prime * result + ((filePath == null) ? 0 : filePath.hashCode());
+		result = prime * result + startColumn;
+		result = prime * result + startLine;
+		result = prime * result + startOffset;
+		return result;
+	}
 
-        //lines are 1-based
-        this.startLine = cu.getLineNumber(startOffset);
-        this.endLine = cu.getLineNumber(endOffset);
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		VariableScope other = (VariableScope) obj;
+		if (endColumn != other.endColumn)
+			return false;
+		if (endLine != other.endLine)
+			return false;
+		if (endOffset != other.endOffset)
+			return false;
+		if (filePath == null) {
+			if (other.filePath != null)
+				return false;
+		} else if (!filePath.equals(other.filePath))
+			return false;
+		if (startColumn != other.startColumn)
+			return false;
+		if (startLine != other.startLine)
+			return false;
+		if (startOffset != other.startOffset)
+			return false;
+		return true;
+	}
 
-        if (cu.getColumnNumber(startOffset) > 0) {
-            //convert to 1-based
-            this.startColumn = cu.getColumnNumber(startOffset) + 1;
-        } else {
-            //columns are 0-based
-            this.startColumn = cu.getColumnNumber(startOffset);
-        }
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(startLine).append(":").append(startColumn);
+		sb.append("-");
+		sb.append(endLine).append(":").append(endColumn);
+		return sb.toString();
+	}
 
-        if (cu.getColumnNumber(endOffset) > 0) {
-            //convert to 1-based
-            this.endColumn = cu.getColumnNumber(endOffset) + 1;
-        } else {
-            this.endColumn = cu.getColumnNumber(endOffset);
-        }
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(filePath, startOffset, endOffset, startLine, startColumn, endLine, endColumn);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null || getClass() != obj.getClass())
-            return false;
-        VariableScope other = (VariableScope) obj;
-        return startOffset == other.startOffset &&
-                endOffset == other.endOffset &&
-                startLine == other.startLine &&
-                startColumn == other.startColumn &&
-                endLine == other.endLine &&
-                endColumn == other.endColumn &&
-                Objects.equals(filePath, other.filePath);
-    }
-
-    @Override
-    public String toString() {
-        return String.format("%d:%d-%d:%d", startLine, startColumn, endLine, endColumn);
-    }
-
-    public boolean subsumes(LocationInfo other) {
-        return this.filePath.equals(other.getFilePath()) &&
-                this.startOffset <= other.getStartOffset() &&
-                this.endOffset >= other.getEndOffset();
-    }
-
-    public int getStartOffset() {
+	public boolean subsumes(LocationInfo other) {
+		return this.filePath.equals(other.getFilePath()) &&
+				this.startOffset <= other.getStartOffset() &&
+				this.endOffset >= other.getEndOffset();
+	}
+	
+	public int getStartOffset() {
         return startOffset;
     }
 

@@ -32,4 +32,8 @@ public class UMLComment implements LocationInfoProvider {
 		sb.append(text);
 		return sb.toString();
 	}
+
+	public String getText() {
+		return text;
+	}
 }

@@ -2812,6 +2812,14 @@ public class UMLModelDiff {
                 .collect(Collectors.toSet());
     }
 
+	public Set<Pair<UMLOperation, UMLOperation>> getChangedCommentOperations(){
+		return getAllClassesDiff()
+				.stream()
+				.map(UMLClassBaseDiff::getChangedCommentsOperations)
+				.flatMap(Set::stream)
+				.collect(Collectors.toSet());
+	}
+
     private List<UMLClassBaseDiff> getAllClassesDiff() {
         List<UMLClassBaseDiff> allClassesDiff = new ArrayList<>();
         allClassesDiff.addAll(commonClassDiffList);
@@ -2829,4 +2837,7 @@ public class UMLModelDiff {
         return new ArrayList<>(addedClasses);
     }
 
+	public List<UMLClassMoveDiff> getInnerClassMoveDiffList() {
+		return innerClassMoveDiffList;
+	}
 }

@@ -9,7 +9,6 @@ import gr.uom.java.xmi.diff.StringDistance;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public class UMLAttribute implements Comparable<UMLAttribute>, Serializable, LocationInfoProvider, VariableDeclarationProvider {
 	private LocationInfo locationInfo;
@@ -17,7 +16,6 @@ public class UMLAttribute implements Comparable<UMLAttribute>, Serializable, Loc
 	private UMLType type;
 	private String visibility;
 	private String className;
-	private UMLType superclass;
 	private boolean isFinal;
 	private boolean isStatic;
 	private boolean isTransient;
@@ -186,11 +184,6 @@ public class UMLAttribute implements Comparable<UMLAttribute>, Serializable, Loc
     	return false;
 	}
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(name, type, visibility);
-	}
-
 	public boolean equalsQualified(UMLAttribute umlAttribute) {
 		return this.name.equals(umlAttribute.name) &&
 				this.visibility.equals(umlAttribute.visibility) &&
@@ -227,13 +220,5 @@ public class UMLAttribute implements Comparable<UMLAttribute>, Serializable, Loc
 		int distance = StringDistance.editDistance(s1, s2);
 		double normalized = (double)distance/(double)Math.max(s1.length(), s2.length());
 		return normalized;
-	}
-
-	public UMLType getSuperclass() {
-		return superclass;
-	}
-
-	public void setSuperclass(UMLType superclass) {
-		this.superclass = superclass;
 	}
 }
