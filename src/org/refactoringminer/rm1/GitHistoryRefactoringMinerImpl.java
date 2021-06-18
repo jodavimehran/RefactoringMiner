@@ -149,7 +149,7 @@ public class GitHistoryRefactoringMinerImpl implements GitHistoryRefactoringMine
 				UMLModel parentUMLModel = createModel(fileContentsBefore, repositoryDirectoriesBefore);
 				UMLModel currentUMLModel = createModel(fileContentsCurrent, repositoryDirectoriesCurrent);
 				
-				UMLModelDiff modelDiff = parentUMLModel.diff(currentUMLModel, renamedFilesHint);
+				modelDiff = parentUMLModel.diff(currentUMLModel, renamedFilesHint);
 				refactoringsAtRevision = modelDiff.getRefactorings();
 				refactoringsAtRevision.addAll(moveSourceFolderRefactorings);
 				refactoringsAtRevision = filter(refactoringsAtRevision);
@@ -795,7 +795,6 @@ public class GitHistoryRefactoringMinerImpl implements GitHistoryRefactoringMine
 		}
 	}
 	*/
-
 	@Override
 	public void detectAtPullRequest(String cloneURL, int pullRequestId, RefactoringHandler handler, int timeout) throws IOException {
 		GHRepository repository = getGitHubRepository(cloneURL);

@@ -301,9 +301,9 @@ public enum RefactoringType {
         List<RefactoringRelationship> result;
         Matcher m = regex.matcher(refactoringDescription);
         if (m.matches()) {
-
+            
             for (int g = 1; g <= m.groupCount(); g++) {
-
+                
             }
             return null;
         } else {
@@ -328,7 +328,7 @@ public enum RefactoringType {
             throw new RuntimeException("Pattern not matched: " + refactoringDescription);
         }
     }
-
+    
     public static RefactoringType fromName(String name) {
       String lcName = name.toLowerCase();
       for (RefactoringType rt : RefactoringType.values()) {
