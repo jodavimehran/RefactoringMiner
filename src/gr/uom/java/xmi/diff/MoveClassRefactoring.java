@@ -5,11 +5,10 @@ import gr.uom.java.xmi.UMLClass;
 import java.util.*;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.refactoringminer.api.Refactoring;
 import org.refactoringminer.api.RefactoringType;
 import org.refactoringminer.util.PrefixSuffixUtils;
 
-public class MoveClassRefactoring implements Refactoring {
+public class MoveClassRefactoring implements PackageLevelRefactoring {
 	private UMLClass originalClass;
 	private UMLClass movedClass;
 	

@@ -1855,7 +1855,7 @@ public abstract class UMLClassBaseDiff extends UMLAbstractClassDiff implements C
 		}
 		Collections.sort(operationBodyMapperList);
 		for(UMLOperationBodyMapper operationBodyMapper : operationBodyMapperList) {
-			sb.append(operationBodyMapper);
+			sb.append(operationBodyMapper).append("\n");
 		}
 		return sb.toString();
 	}
