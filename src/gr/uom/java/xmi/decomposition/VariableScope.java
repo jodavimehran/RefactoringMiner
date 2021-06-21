@@ -1,12 +1,11 @@
 package gr.uom.java.xmi.decomposition;
 
-import gr.uom.java.xmi.LocationInfo;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import org.eclipse.jdt.core.dom.CompilationUnit;
+
+import gr.uom.java.xmi.LocationInfo;
 
 public class VariableScope {
 	private String filePath;
@@ -16,6 +15,7 @@ public class VariableScope {
 	private int startColumn;
 	private int endLine;
 	private int endColumn;
+	private List<AbstractCodeFragment> statementsInScope = new ArrayList<>();
 	private final List<AbstractCodeFragment> statementList = new ArrayList<>();
     private String parentSignature = "";
 	
@@ -92,6 +92,14 @@ public class VariableScope {
 		sb.append("-");
 		sb.append(endLine).append(":").append(endColumn);
 		return sb.toString();
+	}
+
+	public void addStatement(AbstractCodeFragment statement) {
+		this.statementsInScope.add(statement);
+	}
+
+	public List<AbstractCodeFragment> getStatementsInScope() {
+		return statementsInScope;
 	}
 
 	public boolean subsumes(LocationInfo other) {
