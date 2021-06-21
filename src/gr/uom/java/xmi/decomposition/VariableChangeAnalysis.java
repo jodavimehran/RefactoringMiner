@@ -30,9 +30,6 @@ public class VariableChangeAnalysis {
         operation1 = mapper.getOperation1();
         operation2 = mapper.getOperation2();
 
-        findVariableScope(operation1.getBody());
-        findVariableScope(operation2.getBody());
-
         for (AbstractCodeMapping abstractCodeMapping : mapper.getMappings()) {
             statementMapping.put(abstractCodeMapping.getFragment1(), abstractCodeMapping.getFragment2());
         }
@@ -76,30 +73,6 @@ public class VariableChangeAnalysis {
 
     public Set<VariableDeclarationReplacement> getChangedVariable() {
         return changedVariable;
-    }
-
-    private void findVariableScope(OperationBody body) {
-        if (body == null)
-            return;
-        Set<VariableScope> variableScopeSet = new HashSet<>();
-        findVariableScope(body.getCompositeStatement(), variableScopeSet);
-    }
-
-    private void findVariableScope(CompositeStatementObject compositeStatementObject, Set<VariableScope> variableScopeSet) {
-        variableScopeSet.addAll(compositeStatementObject.getVariableDeclarations().stream().map(VariableDeclaration::getScope).collect(Collectors.toList()));
-        for (AbstractStatement statement : compositeStatementObject.getStatements()) {
-            for (VariableScope variableScope : variableScopeSet) {
-                variableScope.addStatement(statement);
-            }
-
-            if (statement instanceof CompositeStatementObject) {
-                CompositeStatementObject compositeStatement = (CompositeStatementObject) statement;
-                findVariableScope(compositeStatement, variableScopeSet);
-            } else {
-                variableScopeSet.addAll(statement.getVariableDeclarations().stream().map(VariableDeclaration::getScope).collect(Collectors.toList()));
-            }
-        }
-        variableScopeSet.removeAll(compositeStatementObject.getAllVariableDeclarations().stream().map(VariableDeclaration::getScope).collect(Collectors.toList()));
     }
 
     private void mapVariables(AbstractCodeFragment leftSide, AbstractCodeFragment rightSide) {
@@ -172,8 +145,8 @@ public class VariableChangeAnalysis {
     }
 
     private boolean sameScope(VariableDeclaration leftSideVar, VariableDeclaration rightSideVar) {
-        List<AbstractCodeFragment> leftSideUsedVariable = leftSideVar.getScope().getStatementList().stream().filter(abstractCodeFragment -> abstractCodeFragment.getVariables().stream().anyMatch(leftSideVar.getVariableName()::equals)).collect(Collectors.toList());
-        List<AbstractCodeFragment> rightSideUsedVariable = rightSideVar.getScope().getStatementList().stream().filter(abstractCodeFragment -> abstractCodeFragment.getVariables().stream().anyMatch(rightSideVar.getVariableName()::equals)).collect(Collectors.toList());
+        List<AbstractCodeFragment> leftSideUsedVariable = leftSideVar.getScope().getStatementsInScope().stream().filter(abstractCodeFragment -> abstractCodeFragment.getVariables().stream().anyMatch(leftSideVar.getVariableName()::equals)).collect(Collectors.toList());
+        List<AbstractCodeFragment> rightSideUsedVariable = rightSideVar.getScope().getStatementsInScope().stream().filter(abstractCodeFragment -> abstractCodeFragment.getVariables().stream().anyMatch(rightSideVar.getVariableName()::equals)).collect(Collectors.toList());
 
         double score = computeSimilarityScore(leftSideUsedVariable, rightSideUsedVariable);
         return score > 0;

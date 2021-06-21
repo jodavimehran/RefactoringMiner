@@ -16,7 +16,6 @@ public class VariableScope {
 	private int endLine;
 	private int endColumn;
 	private List<AbstractCodeFragment> statementsInScope = new ArrayList<>();
-	private final List<AbstractCodeFragment> statementList = new ArrayList<>();
     private String parentSignature = "";
 	
 	public VariableScope(CompilationUnit cu, String filePath, int startOffset, int endOffset) {
@@ -114,14 +113,6 @@ public class VariableScope {
 
     public int getEndOffset() {
         return endOffset;
-    }
-
-    public void addStatement(AbstractCodeFragment statement) {
-        statementList.add(statement);
-    }
-
-    public List<AbstractCodeFragment> getStatementList() {
-        return statementList;
     }
 
     public String getParentSignature() {
