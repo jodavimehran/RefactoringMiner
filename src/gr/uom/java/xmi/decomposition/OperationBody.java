@@ -1,7 +1,7 @@
 package gr.uom.java.xmi.decomposition;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,11 +42,12 @@ public class OperationBody {
 	private CompositeStatementObject compositeStatement;
 	private List<String> stringRepresentation;
 	private boolean containsAssertion;
-	private Set<VariableDeclaration> activeVariableDeclarations = new LinkedHashSet<VariableDeclaration>();
+	private Set<VariableDeclaration> activeVariableDeclarations;
     private final String sha512;
 
 	public OperationBody(CompilationUnit cu, String filePath, Block methodBody) {
 		this.compositeStatement = new CompositeStatementObject(cu, filePath, methodBody, 0, CodeElementType.BLOCK);
+		this.activeVariableDeclarations = new HashSet<VariableDeclaration>();
 		List<Statement> statements = methodBody.statements();
 		for(Statement statement : statements) {
 			processStatement(cu, filePath, compositeStatement, statement);
@@ -57,6 +58,7 @@ public class OperationBody {
 				break;
 			}
 		}
+		this.activeVariableDeclarations = null;
 		sha512 = org.refactoringminer.util.Hashing.getSHA512(String.join("", stringRepresentation()));
 	}
 
@@ -148,8 +150,10 @@ public class OperationBody {
 				AbstractExpression abstractExpression = new AbstractExpression(cu, filePath, updater, CodeElementType.FOR_STATEMENT_UPDATER);
 				child.addExpression(abstractExpression);
 			}
-			this.activeVariableDeclarations.addAll(child.getVariableDeclarations());
+			List<VariableDeclaration> variableDeclarations = child.getVariableDeclarations();
+			this.activeVariableDeclarations.addAll(variableDeclarations);
 			processStatement(cu, filePath, child, forStatement.getBody());
+			this.activeVariableDeclarations.removeAll(variableDeclarations);
 		}
 		else if(statement instanceof EnhancedForStatement) {
 			EnhancedForStatement enhancedForStatement = (EnhancedForStatement)statement;
@@ -167,8 +171,10 @@ public class OperationBody {
 			}
 			AbstractExpression abstractExpression = new AbstractExpression(cu, filePath, enhancedForStatement.getExpression(), CodeElementType.ENHANCED_FOR_STATEMENT_EXPRESSION);
 			child.addExpression(abstractExpression);
-			this.activeVariableDeclarations.addAll(child.getVariableDeclarations());
+			List<VariableDeclaration> variableDeclarations = child.getVariableDeclarations();
+			this.activeVariableDeclarations.addAll(variableDeclarations);
 			processStatement(cu, filePath, child, enhancedForStatement.getBody());
+			this.activeVariableDeclarations.removeAll(variableDeclarations);
 		}
 		else if(statement instanceof WhileStatement) {
 			WhileStatement whileStatement = (WhileStatement)statement;
@@ -256,11 +262,13 @@ public class OperationBody {
 				AbstractExpression expression = new AbstractExpression(cu, filePath, resource, CodeElementType.TRY_STATEMENT_RESOURCE);
 				child.addExpression(expression);
 			}
-			this.activeVariableDeclarations.addAll(child.getVariableDeclarations());
+			List<VariableDeclaration> variableDeclarations = child.getVariableDeclarations();
+			this.activeVariableDeclarations.addAll(variableDeclarations);
 			List<Statement> tryStatements = tryStatement.getBody().statements();
 			for(Statement blockStatement : tryStatements) {
 				processStatement(cu, filePath, child, blockStatement);
 			}
+			this.activeVariableDeclarations.removeAll(variableDeclarations);
 			List<CatchClause> catchClauses = tryStatement.catchClauses();
 			for(CatchClause catchClause : catchClauses) {
 				Block catchClauseBody = catchClause.getBody();
@@ -277,11 +285,13 @@ public class OperationBody {
 					AbstractExpression variableDeclarationInitializer = new AbstractExpression(cu, filePath, variableDeclaration.getInitializer(), CodeElementType.VARIABLE_DECLARATION_INITIALIZER);
 					catchClauseStatementObject.addExpression(variableDeclarationInitializer);
 				}
-				this.activeVariableDeclarations.addAll(catchClauseStatementObject.getVariableDeclarations());
+				List<VariableDeclaration> catchClauseVariableDeclarations = catchClauseStatementObject.getVariableDeclarations();
+				this.activeVariableDeclarations.addAll(catchClauseVariableDeclarations);
 				List<Statement> blockStatements = catchClauseBody.statements();
 				for(Statement blockStatement : blockStatements) {
 					processStatement(cu, filePath, catchClauseStatementObject, blockStatement);
 				}
+				this.activeVariableDeclarations.removeAll(catchClauseVariableDeclarations);
 			}
 			Block finallyBlock = tryStatement.getFinally();
 			if(finallyBlock != null) {
