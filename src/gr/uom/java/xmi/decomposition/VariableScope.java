@@ -16,6 +16,7 @@ public class VariableScope {
 	private int endLine;
 	private int endColumn;
 	private List<AbstractCodeFragment> statementsInScope = new ArrayList<>();
+	private List<AbstractCodeFragment> statementsInScopeUsingVariable = new ArrayList<>();
     private String parentSignature = "";
 	
 	public VariableScope(CompilationUnit cu, String filePath, int startOffset, int endOffset) {
@@ -97,8 +98,16 @@ public class VariableScope {
 		this.statementsInScope.add(statement);
 	}
 
+	public void addStatementUsingVariable(AbstractCodeFragment statement) {
+		this.statementsInScopeUsingVariable.add(statement);
+	}
+
 	public List<AbstractCodeFragment> getStatementsInScope() {
 		return statementsInScope;
+	}
+
+	public List<AbstractCodeFragment> getStatementsInScopeUsingVariable() {
+		return statementsInScopeUsingVariable;
 	}
 
 	public boolean subsumes(LocationInfo other) {
