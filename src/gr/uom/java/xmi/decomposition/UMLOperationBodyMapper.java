@@ -2820,6 +2820,7 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 			}
 			if(invocationCoveringTheEntireStatement2 != null) {
 				int commonArguments = 0;
+				Set<AbstractCodeFragment> additionallyMatchedStatements2 = new LinkedHashSet<AbstractCodeFragment>(); 
 				for(String key1 : methodInvocationMap1.keySet()) {
 					if(invocationCoveringTheEntireStatement1.actualString().startsWith(key1)) {
 						for(AbstractCall invocation1 : methodInvocationMap1.get(key1)) {
@@ -2833,13 +2834,31 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 									commonArguments += argumentIntersection.size();
 								}
 							}
+							for(AbstractCodeFragment codeFragment : replacementInfo.statements2) { 
+								OperationInvocation invocation = codeFragment.invocationCoveringEntireFragment(); 
+								if(invocation != null) { 
+									if(invocation.identical(invocation1, replacementInfo.getReplacements(), lambdaMappers)) { 
+										additionallyMatchedStatements2.add(codeFragment); 
+									} 
+									if((invocation.getExpression() != null && invocation.getExpression().equals(invocation1.actualString())) ||
+											invocation.callChainIntersection((OperationInvocation)invocation1).size() > 0) {
+										additionallyMatchedStatements2.add(codeFragment); 
+									} 
+								} 
+							}
 						}
 					}
 				}
 				if(commonArguments > 0) {
-					Replacement replacement = new MethodInvocationReplacement(invocationCoveringTheEntireStatement1.getName(), invocationCoveringTheEntireStatement2.getName(),
-							invocationCoveringTheEntireStatement1, invocationCoveringTheEntireStatement2, ReplacementType.METHOD_INVOCATION);
-					replacementInfo.addReplacement(replacement);
+					if(additionallyMatchedStatements2.size() > 0) { 
+						Replacement composite = new CompositeReplacement(statement1.getString(), statement2.getString(), new LinkedHashSet<AbstractCodeFragment>(), additionallyMatchedStatements2); 
+						replacementInfo.addReplacement(composite); 
+					}
+					else {
+						Replacement replacement = new MethodInvocationReplacement(invocationCoveringTheEntireStatement1.getName(), invocationCoveringTheEntireStatement2.getName(),
+								invocationCoveringTheEntireStatement1, invocationCoveringTheEntireStatement2, ReplacementType.METHOD_INVOCATION);
+						replacementInfo.addReplacement(replacement);
+					}
 					return replacementInfo.getReplacements();
 				}
 			}
@@ -2865,6 +2884,7 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 			}
 			if(invocationCoveringTheEntireStatement1 != null) {
 				int commonArguments = 0;
+				Set<AbstractCodeFragment> additionallyMatchedStatements1 = new LinkedHashSet<AbstractCodeFragment>();
 				for(String key2 : methodInvocationMap2.keySet()) {
 					if(invocationCoveringTheEntireStatement2.actualString().startsWith(key2)) {
 						for(AbstractCall invocation2 : methodInvocationMap2.get(key2)) {
@@ -2878,13 +2898,31 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 									commonArguments += argumentIntersection.size();
 								}
 							}
+							for(AbstractCodeFragment codeFragment : replacementInfo.statements1) {
+								OperationInvocation invocation = codeFragment.invocationCoveringEntireFragment();
+								if(invocation != null) {
+									if(invocation.identical(invocation2, replacementInfo.getReplacements(), lambdaMappers)) {
+										additionallyMatchedStatements1.add(codeFragment);
+									}
+									if((invocation.getExpression() != null && invocation.getExpression().equals(invocation2.actualString())) ||
+											invocation.callChainIntersection((OperationInvocation)invocation2).size() > 0) {
+										additionallyMatchedStatements1.add(codeFragment);
+									}
+								}
+							}
 						}
 					}
 				}
 				if(commonArguments > 0) {
-					Replacement replacement = new MethodInvocationReplacement(invocationCoveringTheEntireStatement1.getName(), invocationCoveringTheEntireStatement2.getName(),
-							invocationCoveringTheEntireStatement1, invocationCoveringTheEntireStatement2, ReplacementType.METHOD_INVOCATION);
-					replacementInfo.addReplacement(replacement);
+					if(additionallyMatchedStatements1.size() > 0) {
+						Replacement composite = new CompositeReplacement(statement1.getString(), statement2.getString(), additionallyMatchedStatements1, new LinkedHashSet<AbstractCodeFragment>());
+						replacementInfo.addReplacement(composite);
+					}
+					else {
+						Replacement replacement = new MethodInvocationReplacement(invocationCoveringTheEntireStatement1.getName(), invocationCoveringTheEntireStatement2.getName(),
+								invocationCoveringTheEntireStatement1, invocationCoveringTheEntireStatement2, ReplacementType.METHOD_INVOCATION);
+						replacementInfo.addReplacement(replacement);
+					}
 					return replacementInfo.getReplacements();
 				}
 			}
