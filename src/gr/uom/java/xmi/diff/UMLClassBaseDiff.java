@@ -1895,9 +1895,9 @@ public abstract class UMLClassBaseDiff extends UMLAbstractClassDiff implements C
 				.collect(java.util.stream.Collectors.toSet());
 	}
 
-	public Set<VariableDeclarationReplacement> getChangedScopeVariables() {
+	public Set<Pair<Pair<VariableDeclaration, UMLOperation>, Pair<VariableDeclaration, UMLOperation>>> getMatchedVariables() {
 		return operationBodyMapperList.stream()
-				.map(UMLOperationBodyMapper::getChangedVariable)
+				.map(UMLOperationBodyMapper::getMatchedVariables)
 				.flatMap(Set::stream)
 				.collect(java.util.stream.Collectors.toSet());
 	}

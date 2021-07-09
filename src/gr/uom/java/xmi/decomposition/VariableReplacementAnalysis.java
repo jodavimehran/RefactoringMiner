@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import java.util.stream.Collectors;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.refactoringminer.api.Refactoring;
 import org.refactoringminer.util.PrefixSuffixUtils;
@@ -273,6 +275,8 @@ public class VariableReplacementAnalysis {
 	}
 
 	private void findAttributeExtractions() {
+		if(classDiff == null)
+			return;
 		for(AbstractCodeMapping mapping : mappings) {
 			for(Replacement replacement : mapping.getReplacements()) {
 				if(replacement.involvesVariable()) {
@@ -1540,5 +1544,23 @@ public class VariableReplacementAnalysis {
 			}
 		}
 		return null;
+	}
+
+	public Set<Pair<VariableDeclaration, UMLOperation>> getRemovedVariables() {
+		return removedVariables.stream()
+				.map(addedVariable -> ImmutablePair.of(addedVariable, operation1))
+				.collect(Collectors.toSet());
+	}
+
+	public Set<Pair<VariableDeclaration, UMLOperation>> getAddedVariables() {
+		return addedVariables.stream()
+				.map(addedVariable -> ImmutablePair.of(addedVariable, operation2))
+				.collect(Collectors.toSet());
+	}
+
+	public Set<Pair<Pair<VariableDeclaration, UMLOperation>, Pair<VariableDeclaration, UMLOperation>>> getMatchedVariables() {
+		return matchedVariables.stream()
+				.map(matchedVariable -> Pair.of(Pair.of(matchedVariable.getLeft(), operation1), Pair.of(matchedVariable.getRight(), operation2)))
+				.collect(Collectors.toSet());
 	}
 }

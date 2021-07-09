@@ -2875,10 +2875,10 @@ public class UMLModelDiff {
                 .collect(Collectors.toSet());
     }
 
-    public Set<VariableDeclarationReplacement> getChangedScopeVariable() {
+    public Set<Pair<Pair<VariableDeclaration, UMLOperation>, Pair<VariableDeclaration, UMLOperation>>> getMatchedVariables() {
         return getAllClassesDiff()
                 .stream()
-                .map(UMLClassBaseDiff::getChangedScopeVariables)
+                .map(UMLClassBaseDiff::getMatchedVariables)
                 .flatMap(Set::stream)
                 .collect(Collectors.toSet());
     }
