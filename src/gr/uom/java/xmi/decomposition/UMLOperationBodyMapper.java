@@ -64,6 +64,7 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 	private List<CompositeStatementObject> nonMappedInnerNodesT1;
 	private List<CompositeStatementObject> nonMappedInnerNodesT2;
 	private Set<Refactoring> refactorings = new LinkedHashSet<Refactoring>();
+	private Set<Pair<VariableDeclaration, VariableDeclaration>> matchedVariables = new LinkedHashSet<>();
 	private Set<CandidateAttributeRefactoring> candidateAttributeRenames = new LinkedHashSet<CandidateAttributeRefactoring>();
 	private Set<CandidateMergeVariableRefactoring> candidateAttributeMerges = new LinkedHashSet<CandidateMergeVariableRefactoring>();
 	private Set<CandidateSplitVariableRefactoring> candidateAttributeSplits = new LinkedHashSet<CandidateSplitVariableRefactoring>();
@@ -683,11 +684,17 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 	public UMLOperation getOperation2() {
 		return operation2;
 	}
+
+	public Set<Pair<VariableDeclaration, VariableDeclaration>> getMatchedVariables() {
+		return matchedVariables;
+	}
+
 	public Set<Refactoring> getRefactorings() {
 		VariableReplacementAnalysis analysis = new VariableReplacementAnalysis(this, refactorings, classDiff, parentMapper != null);
 		refactorings.addAll(analysis.getVariableRenames());
 		refactorings.addAll(analysis.getVariableMerges());
 		refactorings.addAll(analysis.getVariableSplits());
+		matchedVariables.addAll(analysis.getMatchedVariables());
 		candidateAttributeRenames.addAll(analysis.getCandidateAttributeRenames());
 		candidateAttributeMerges.addAll(analysis.getCandidateAttributeMerges());
 		candidateAttributeSplits.addAll(analysis.getCandidateAttributeSplits());
@@ -2129,11 +2136,35 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 			Set<String> nullLiterals2 = new LinkedHashSet<String>();
 			nullLiterals2.add("null");
 			findReplacements(variables1, nullLiterals2, replacementInfo, ReplacementType.VARIABLE_REPLACED_WITH_NULL_LITERAL);
+			if(invocationCoveringTheEntireStatement1 != null) {
+				String expression = invocationCoveringTheEntireStatement1.getExpression();
+				if(expression != null && expression.equals("Optional") && invocationCoveringTheEntireStatement1.getName().equals("empty") &&
+						invocationCoveringTheEntireStatement1.getArguments().size() == 0) {
+					Set<String> invocations1 = new LinkedHashSet<String>();
+					invocations1.add(invocationCoveringTheEntireStatement1.actualString());
+					findReplacements(invocations1, nullLiterals2, replacementInfo, ReplacementType.NULL_LITERAL_REPLACED_WITH_OPTIONAL_EMPTY);
+				}
+			}
+			if(methodInvocations1.contains("Optional.empty()")) {
+				findReplacements(methodInvocations1, nullLiterals2, replacementInfo, ReplacementType.NULL_LITERAL_REPLACED_WITH_OPTIONAL_EMPTY);
+			}
 		}
 		else if(!statement1.getNullLiterals().isEmpty() && statement2.getNullLiterals().isEmpty()) {
 			Set<String> nullLiterals1 = new LinkedHashSet<String>();
 			nullLiterals1.add("null");
 			findReplacements(nullLiterals1, variables2, replacementInfo, ReplacementType.VARIABLE_REPLACED_WITH_NULL_LITERAL);
+			if(invocationCoveringTheEntireStatement2 != null) {
+				String expression = invocationCoveringTheEntireStatement2.getExpression();
+				if(expression != null && expression.equals("Optional") && invocationCoveringTheEntireStatement2.getName().equals("empty") &&
+						invocationCoveringTheEntireStatement2.getArguments().size() == 0) {
+					Set<String> invocations2 = new LinkedHashSet<String>();
+					invocations2.add(invocationCoveringTheEntireStatement2.actualString());
+					findReplacements(nullLiterals1, invocations2, replacementInfo, ReplacementType.NULL_LITERAL_REPLACED_WITH_OPTIONAL_EMPTY);
+				}
+			}
+			if(methodInvocations2.contains("Optional.empty()")) {
+				findReplacements(nullLiterals1, methodInvocations2, replacementInfo, ReplacementType.NULL_LITERAL_REPLACED_WITH_OPTIONAL_EMPTY);
+			}
 		}
 
 		if(statement1.getTernaryOperatorExpressions().isEmpty() && !statement2.getTernaryOperatorExpressions().isEmpty()) {
