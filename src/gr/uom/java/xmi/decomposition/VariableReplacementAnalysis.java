@@ -1596,7 +1596,7 @@ public class VariableReplacementAnalysis {
 				.collect(Collectors.toSet());
 	}
 
-	public Set<Pair<Pair<VariableDeclaration, UMLOperation>, Pair<VariableDeclaration, UMLOperation>>> getMatchedVariables() {
+	public Set<Pair<Pair<VariableDeclaration, UMLOperation>, Pair<VariableDeclaration, UMLOperation>>> getMatchedVariablesPair() {
 		return matchedVariables.stream()
 				.map(matchedVariable -> Pair.of(Pair.of(matchedVariable.getLeft(), operation1), Pair.of(matchedVariable.getRight(), operation2)))
 				.collect(Collectors.toSet());

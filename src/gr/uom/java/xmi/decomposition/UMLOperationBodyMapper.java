@@ -80,7 +80,7 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 	private Map<AbstractCodeFragment, UMLOperation> codeFragmentOperationMap2 = new LinkedHashMap<AbstractCodeFragment, UMLOperation>();
 	private Set<Pair<VariableDeclaration, UMLOperation>> removedVariables;
 	private Set<Pair<VariableDeclaration, UMLOperation>> addedVariables;
-	private Set<Pair<Pair<VariableDeclaration, UMLOperation>, Pair<VariableDeclaration, UMLOperation>>> matchedVariables;
+	private Set<Pair<Pair<VariableDeclaration, UMLOperation>, Pair<VariableDeclaration, UMLOperation>>> matchedVariablesPair;
 
 	public UMLOperationBodyMapper(UMLOperation operation1, UMLOperation operation2, UMLClassBaseDiff classDiff) throws RefactoringMinerTimedOutException {
 		this.classDiff = classDiff;
@@ -701,7 +701,7 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 
 		removedVariables = analysis.getRemovedVariables();
 		addedVariables = analysis.getAddedVariables();
-		matchedVariables = analysis.getMatchedVariables();
+		matchedVariablesPair = analysis.getMatchedVariablesPair();
 
 		return refactorings;
 	}
@@ -5149,8 +5149,8 @@ public class UMLOperationBodyMapper implements Comparable<UMLOperationBodyMapper
 		return addedVariables;
 	}
 
-	public Set<Pair<Pair<VariableDeclaration, UMLOperation>, Pair<VariableDeclaration, UMLOperation>>> getMatchedVariables() {
-		return matchedVariables;
+	public Set<Pair<Pair<VariableDeclaration, UMLOperation>, Pair<VariableDeclaration, UMLOperation>>> getMatchedVariablesPair() {
+		return matchedVariablesPair;
 	}
 
 	public boolean differentBody() {

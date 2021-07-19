@@ -1900,7 +1900,7 @@ public abstract class UMLClassBaseDiff extends UMLAbstractClassDiff implements C
 
 	public Set<Pair<Pair<VariableDeclaration, UMLOperation>, Pair<VariableDeclaration, UMLOperation>>> getMatchedVariables() {
 		return operationBodyMapperList.stream()
-				.map(UMLOperationBodyMapper::getMatchedVariables)
+				.map(UMLOperationBodyMapper::getMatchedVariablesPair)
 				.flatMap(Set::stream)
 				.collect(java.util.stream.Collectors.toSet());
 	}
